@@ -139,6 +139,14 @@ void CNumbMisc::OnRender()
 {
 	ApplyProcessPriority();
 
+	// NumbClient: fast input only has the fixed "Numb" preset
+	if(g_Config.m_TcFastInput)
+	{
+		g_Config.m_TcFastInputAmount = 20;
+		g_Config.m_TcFastInputOthers = 0;
+		g_Config.m_TcFastInputRepredictHook = 0;
+	}
+
 	if(Client()->State() != IClient::STATE_ONLINE || !GameClient()->m_Snap.m_pLocalInfo)
 		return;
 

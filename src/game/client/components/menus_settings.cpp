@@ -12,6 +12,9 @@
 #include <game/client/components/menu_background.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
+#include <engine/font_icons.h>
+#include <engine/textrender.h>
+
 #include <game/localization.h>
 
 void CMenus::SetNeedSendInfo()
@@ -26,8 +29,18 @@ void CMenus::RenderSettings(CUIRect MainView)
 {
 	// render background
 	CUIRect Button, TabBar, RestartBar;
-	MainView.VSplitRight(120.0f, &MainView, &TabBar);
-	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
+	const bool NcModern = g_Config.m_NcUiTheme;
+	if(NcModern)
+	{
+		MainView.VSplitLeft(150.0f, &TabBar, &MainView);
+		MainView.VSplitLeft(8.0f, nullptr, &MainView);
+		MainView.Draw(NcPanelColor(), IGraphics::CORNER_ALL, 10.0f);
+	}
+	else
+	{
+		MainView.VSplitRight(120.0f, &MainView, &TabBar);
+		MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
+	}
 	MainView.Margin(20.0f, &MainView);
 
 	const bool NeedRestart = m_NeedRestartGraphics || m_NeedRestartSound || m_NeedRestartUpdate;
@@ -37,8 +50,11 @@ void CMenus::RenderSettings(CUIRect MainView)
 		MainView.HSplitBottom(10.0f, &MainView, nullptr);
 	}
 
-	TabBar.HSplitTop(50.0f, &Button, &TabBar);
-	Button.Draw(ms_ColorTabbarActive, IGraphics::CORNER_BR, 10.0f);
+	if(!NcModern)
+	{
+		TabBar.HSplitTop(50.0f, &Button, &TabBar);
+		Button.Draw(ms_ColorTabbarActive, IGraphics::CORNER_BR, 10.0f);
+	}
 
 	const char *apTabs[SETTINGS_LENGTH] = {
 		Localize("Language"),
@@ -57,12 +73,66 @@ void CMenus::RenderSettings(CUIRect MainView)
 		Localize("Credits")};
 	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 
-	for(int i = 0; i < SETTINGS_LENGTH; i++)
+	if(NcModern)
 	{
-		TabBar.HSplitTop(10.0f, nullptr, &TabBar);
-		TabBar.HSplitTop(26.0f, &Button, &TabBar);
-		if(DoButton_MenuTab(&s_aTabButtons[i], apTabs[i], g_Config.m_UiSettingsPage == i, &Button, IGraphics::CORNER_R, &m_aAnimatorsSettingsTab[i]))
-			g_Config.m_UiSettingsPage = i;
+		// NumbClient: grouped sidebar with icons
+		const ColorRGBA Accent = NcAccentColor();
+		const ColorRGBA ActiveColor = Accent.WithAlpha(0.75f);
+		const ColorRGBA IdleColor(1.0f, 1.0f, 1.0f, 0.0f);
+		const ColorRGBA HoverColor = Accent.WithAlpha(0.3f);
+		const char *apIcons[SETTINGS_LENGTH] = {
+			FontIcon::EARTH_AMERICAS, FontIcon::GEAR, FontIcon::USER, FontIcon::BRUSH, FontIcon::IMAGE, FontIcon::KEYBOARD,
+			FontIcon::VIDEO, FontIcon::MUSIC, FontIcon::FLAG_CHECKERED, FontIcon::LAYER_GROUP,
+			FontIcon::STAR, FontIcon::ICON_USERS, FontIcon::FOLDER, FontIcon::HEART};
+		struct SGroup
+		{
+			const char *m_pName;
+			int m_First, m_Last;
+		};
+		const SGroup aGroups[] = {
+			{Localize("Game"), SETTINGS_LANGUAGE, SETTINGS_CONTROLS},
+			{TCLocalize("System"), SETTINGS_GRAPHICS, SETTINGS_ASSETS},
+			{"NumbClient", SETTINGS_TCLIENT, SETTINGS_CONFIGS},
+			{TCLocalize("About"), SETTINGS_CREDITS, SETTINGS_CREDITS},
+		};
+
+		TabBar.Draw(NcPanelColor(), IGraphics::CORNER_ALL, 10.0f);
+		TabBar.Margin(6.0f, &TabBar);
+		for(const SGroup &Group : aGroups)
+		{
+			CUIRect GroupLabel;
+			TabBar.HSplitTop(16.0f, &GroupLabel, &TabBar);
+			TextRender()->TextColor(Accent.WithAlpha(0.9f));
+			Ui()->DoLabel(&GroupLabel, Group.m_pName, 9.0f, TEXTALIGN_ML);
+			TextRender()->TextColor(TextRender()->DefaultTextColor());
+			for(int i = Group.m_First; i <= Group.m_Last; i++)
+			{
+				TabBar.HSplitTop(22.0f, &Button, &TabBar);
+				TabBar.HSplitTop(2.0f, nullptr, &TabBar);
+				const bool Active = g_Config.m_UiSettingsPage == i;
+				if(DoButton_MenuTab(&s_aTabButtons[i], "", Active, &Button, IGraphics::CORNER_ALL, nullptr, &IdleColor, &ActiveColor, &HoverColor, 5.0f))
+					g_Config.m_UiSettingsPage = i;
+				CUIRect Icon, Label;
+				Button.VSplitLeft(22.0f, &Icon, &Label);
+				TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+				TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
+				Ui()->DoLabel(&Icon, apIcons[i], 9.0f, TEXTALIGN_MC);
+				TextRender()->SetRenderFlags(0);
+				TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+				Ui()->DoLabel(&Label, apTabs[i], 10.5f, TEXTALIGN_ML);
+			}
+			TabBar.HSplitTop(6.0f, nullptr, &TabBar);
+		}
+	}
+	else
+	{
+		for(int i = 0; i < SETTINGS_LENGTH; i++)
+		{
+			TabBar.HSplitTop(10.0f, nullptr, &TabBar);
+			TabBar.HSplitTop(26.0f, &Button, &TabBar);
+			if(DoButton_MenuTab(&s_aTabButtons[i], apTabs[i], g_Config.m_UiSettingsPage == i, &Button, IGraphics::CORNER_R, &m_aAnimatorsSettingsTab[i]))
+				g_Config.m_UiSettingsPage = i;
+		}
 	}
 
 	if(g_Config.m_UiSettingsPage == SETTINGS_LANGUAGE)

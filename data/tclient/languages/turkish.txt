@@ -1123,3 +1123,12 @@ Broadcast X
 Broadcast Y
 == Duyuru Y
 
+TClient features
+== TClient özellikleri
+
+System
+== Sistem
+
+About
+== Hakkında
+

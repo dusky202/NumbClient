@@ -319,60 +319,34 @@ void CMenus::RenderSettingsTClient(CUIRect MainView)
 		s_Time = (float)rand() / (float)RAND_MAX;
 	}
 
-	static int s_CurCustomTab = 0;
+	static int s_CurCustomTab = TCLIENT_TAB_NUMBCLIENT;
+	if(s_CurCustomTab != TCLIENT_TAB_NUMBCLIENT && s_CurCustomTab != TCLIENT_TAB_SETTINGS)
+		s_CurCustomTab = TCLIENT_TAB_NUMBCLIENT;
 
+	// NumbClient: only two sub pages remain, shown as a compact segmented control
 	CUIRect TabBar, Button;
-	int TabCount = NUMBER_OF_TCLIENT_TABS;
-	for(int Tab = 0; Tab < NUMBER_OF_TCLIENT_TABS; ++Tab)
+	MainView.HSplitTop(LineSize + 4.0f, &TabBar, &MainView);
+	TabBar.VMargin(std::max(0.0f, (TabBar.w - 320.0f) / 2.0f), &TabBar);
+	const ColorRGBA Accent = NcAccentColor();
+	const ColorRGBA ActiveColor = Accent.WithAlpha(0.8f);
+	const ColorRGBA IdleColor(1.0f, 1.0f, 1.0f, 0.06f);
+	const ColorRGBA HoverColor = Accent.WithAlpha(0.35f);
+	static CButtonContainer s_aPageTabs[2] = {};
+	const int aTabs[2] = {TCLIENT_TAB_NUMBCLIENT, TCLIENT_TAB_SETTINGS};
+	const char *apTabNames[2] = {"NumbClient", TCLocalize("TClient features")};
+	for(int i = 0; i < 2; i++)
 	{
-		if(IsFlagSet(g_Config.m_TcTClientSettingsTabs, Tab))
-		{
-			TabCount--;
-			if(s_CurCustomTab == Tab)
-				s_CurCustomTab++;
-		}
-	}
-
-	MainView.HSplitTop(LineSize, &TabBar, &MainView);
-	const float TabWidth = TabBar.w / TabCount;
-	static CButtonContainer s_aPageTabs[NUMBER_OF_TCLIENT_TABS] = {};
-	const char *apTabNames[] = {
-		"NumbClient",
-		TCLocalize("Settings"),
-		TCLocalize("Bind Wheel"),
-		TCLocalize("War List"),
-		TCLocalize("Chat Binds"),
-		TCLocalize("Status Bar"),
-		TCLocalize("Info")};
-
-	for(int Tab = 0; Tab < NUMBER_OF_TCLIENT_TABS; ++Tab)
-	{
-		if(IsFlagSet(g_Config.m_TcTClientSettingsTabs, Tab))
-			continue;
-
-		TabBar.VSplitLeft(TabWidth, &Button, &TabBar);
-		const int Corners = Tab == 0 ? IGraphics::CORNER_L : Tab == NUMBER_OF_TCLIENT_TABS - 1 ? IGraphics::CORNER_R :
-													 IGraphics::CORNER_NONE;
-		if(DoButton_MenuTab(&s_aPageTabs[Tab], apTabNames[Tab], s_CurCustomTab == Tab, &Button, Corners, nullptr, nullptr, nullptr, nullptr, 4.0f))
-			s_CurCustomTab = Tab;
+		TabBar.VSplitLeft(TabBar.w / (2 - i), &Button, &TabBar);
+		if(DoButton_MenuTab(&s_aPageTabs[i], apTabNames[i], s_CurCustomTab == aTabs[i], &Button, i == 0 ? IGraphics::CORNER_L : IGraphics::CORNER_R, nullptr, &IdleColor, &ActiveColor, &HoverColor, 8.0f))
+			s_CurCustomTab = aTabs[i];
 	}
 
 	MainView.HSplitTop(Margin, nullptr, &MainView);
 
 	if(s_CurCustomTab == TCLIENT_TAB_NUMBCLIENT)
 		RenderSettingsNumbClient(MainView);
-	if(s_CurCustomTab == TCLIENT_TAB_SETTINGS)
+	else
 		RenderSettingsTClientSettings(MainView);
-	if(s_CurCustomTab == TCLIENT_TAB_BINDCHAT)
-		RenderSettingsTClientChatBinds(MainView);
-	if(s_CurCustomTab == TCLIENT_TAB_BINDWHEEL)
-		RenderSettingsTClientBindWheel(MainView);
-	if(s_CurCustomTab == TCLIENT_TAB_WARLIST)
-		RenderSettingsTClientWarList(MainView);
-	if(s_CurCustomTab == TCLIENT_TAB_STATUSBAR)
-		RenderSettingsTClientStatusBar(MainView);
-	if(s_CurCustomTab == TCLIENT_TAB_INFO)
-		RenderSettingsTClientInfo(MainView);
 }
 
 void CMenus::RenderSettingsTClientSettings(CUIRect MainView)
@@ -555,20 +529,8 @@ void CMenus::RenderSettingsTClientSettings(CUIRect MainView)
 	Ui()->DoLabel(&Label, TCLocalize("Input"), HeadlineFontSize, TEXTALIGN_ML);
 	Column.HSplitTop(MarginSmall, nullptr, &Column);
 
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_TcFastInput, TCLocalize("Fast Input (reduced visual delay)"), &g_Config.m_TcFastInput, &Column, LineSize);
-
-	Column.HSplitTop(LineSize, &Button, &Column);
-	DoSliderWithScaledValue(&g_Config.m_TcFastInputAmount, &g_Config.m_TcFastInputAmount, &Button, TCLocalize("Amount"), 1, 40, 1, &CUi::ms_LinearScrollbarScale, CUi::SCROLLBAR_OPTION_NOCLAMPVALUE, "ms");
-
-	Column.HSplitTop(MarginSmall, nullptr, &Column);
-	if(g_Config.m_TcFastInput)
-		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_TcFastInputOthers, TCLocalize("Fast Input others"), &g_Config.m_TcFastInputOthers, &Column, LineSize);
-	else
-		Column.HSplitTop(LineSize, nullptr, &Column);
-
+	// NumbClient: fast input lives in the NumbClient tab (Numb preset only)
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_ClSubTickAiming, TCLocalize("Sub-Tick aiming"), &g_Config.m_ClSubTickAiming, &Column, LineSize);
-	if(!g_Config.m_ClSubTickAiming)
-		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_TcFastInputRepredictHook, TCLocalize("Repredict on mid-tick hook direction change (may lag)"), &g_Config.m_TcFastInputRepredictHook, &Column, LineSize);
 
 	// A little extra spacing because these are multi line
 	Column.HSplitTop(MarginSmall, nullptr, &Column);
@@ -3148,50 +3110,7 @@ void CMenus::RenderSettingsNumbClient(CUIRect MainView)
 
 	// ***** Left: Gameplay & optimizer ***** //
 	Headline(Column, TCLocalize("Fast Input"));
-	{
-		// presets map onto TClient's fast input engine
-		struct SPreset
-		{
-			const char *m_pName;
-			int m_Enabled;
-			int m_Amount;
-			int m_Others;
-		};
-		const SPreset aPresets[] = {
-			{TCLocalize("Off"), 0, 20, 0},
-			{TCLocalize("Classic"), 1, 10, 0},
-			{TCLocalize("Balanced"), 1, 20, 0},
-			{TCLocalize("Precise"), 1, 30, 1},
-			{TCLocalize("Aggressive"), 1, 50, 1},
-			{TCLocalize("Maximum"), 1, 100, 1},
-		};
-		static CButtonContainer s_aPresetButtons[std::size(aPresets)];
-		Column.HSplitTop(LineSize, &Button, &Column);
-		const float BtnW = Button.w / std::size(aPresets);
-		for(size_t i = 0; i < std::size(aPresets); i++)
-		{
-			CUIRect B;
-			Button.VSplitLeft(BtnW, &B, &Button);
-			const SPreset &P = aPresets[i];
-			const bool Selected = g_Config.m_TcFastInput == P.m_Enabled && (!P.m_Enabled || (g_Config.m_TcFastInputAmount == P.m_Amount && g_Config.m_TcFastInputOthers == P.m_Others));
-			const int Corners = i == 0 ? IGraphics::CORNER_L : i == std::size(aPresets) - 1 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE;
-			if(DoButton_MenuTab(&s_aPresetButtons[i], P.m_pName, Selected, &B, Corners))
-			{
-				g_Config.m_TcFastInput = P.m_Enabled;
-				if(P.m_Enabled)
-				{
-					g_Config.m_TcFastInputAmount = P.m_Amount;
-					g_Config.m_TcFastInputOthers = P.m_Others;
-				}
-			}
-		}
-		Column.HSplitTop(MarginSmall, nullptr, &Column);
-		if(g_Config.m_TcFastInput)
-		{
-			Slider(Column, &g_Config.m_TcFastInputAmount, TCLocalize("Amount"), 1, 100, "ms");
-			DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_TcFastInputOthers, TCLocalize("Apply to other tees"), &g_Config.m_TcFastInputOthers, &Column, LineSize);
-		}
-	}
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_TcFastInput, "Numb", &g_Config.m_TcFastInput, &Column, LineSize);
 
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcAntipingLagGuard, TCLocalize("Antiping lag guard"), &g_Config.m_NcAntipingLagGuard, &Column, LineSize);
 	if(g_Config.m_NcAntipingLagGuard)
