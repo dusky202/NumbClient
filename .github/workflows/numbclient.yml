@@ -1,0 +1,66 @@
+name: NumbClient Windows Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: numbclient-build
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      CARGO_HTTP_MULTIPLEXING: false
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        submodules: recursive
+
+    - name: Install Vulkan SDK
+      uses: humbletim/install-vulkan-sdk@v1.2
+      with:
+        version: 1.3.296.0
+        cache: true
+
+    - name: Cache Rust dependencies
+      uses: Swatinem/rust-cache@v2.9.2
+      with:
+        cache-bin: false
+
+    - name: Configure
+      run: |
+        mkdir release
+        cd release
+        cmake -A x64 -DEXCEPTION_HANDLING=ON -DVULKAN=ON -DAUTOUPDATE=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE=. ..
+
+    - name: Build
+      run: |
+        cd release
+        cmake --build . --config Release --target game-client game-server --parallel
+
+    - name: Package
+      run: |
+        cd release
+        cmake --build . --config Release --target package_default
+        Get-ChildItem *.zip
+        Copy-Item (Get-ChildItem *-win64.zip | Select-Object -First 1).FullName ..\NumbClient-win64.zip
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: NumbClient-win64
+        path: NumbClient-win64.zip
+
+    - name: Publish rolling release
+      shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release delete latest --yes --cleanup-tag || true
+        gh release create latest NumbClient-win64.zip --title "NumbClient (son derleme)" --notes "Commit ${GITHUB_SHA::7}" --target "$GITHUB_SHA"
