@@ -683,6 +683,105 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 	}
 }
 
+void CMenus::RenderNcSideRail(CUIRect Rail, IClient::EClientState ClientState)
+{
+	const ColorRGBA Accent = NcAccentColor();
+	Rail.Draw(NcPanelColor(), IGraphics::CORNER_ALL, 10.0f);
+	Rail.Margin(6.0f, &Rail);
+
+	// wordmark
+	CUIRect Title;
+	Rail.HSplitTop(26.0f, &Title, &Rail);
+	TextRender()->TextColor(Accent.WithAlpha(1.0f));
+	Ui()->DoLabel(&Title, "NumbClient", 15.0f, TEXTALIGN_MC);
+	TextRender()->TextColor(TextRender()->DefaultTextColor());
+	Rail.HSplitTop(8.0f, nullptr, &Rail);
+
+	const int ActivePage = ClientState == IClient::STATE_OFFLINE ? m_MenuPage : m_GamePage;
+	int NewPage = -1;
+	const ColorRGBA ActiveColor = Accent.WithAlpha(0.75f);
+	const ColorRGBA IdleColor(1.0f, 1.0f, 1.0f, 0.04f);
+	const ColorRGBA HoverColor = Accent.WithAlpha(0.35f);
+
+	auto RailButton = [&](CButtonContainer *pId, const char *pIcon, const char *pLabel, bool Active) -> bool {
+		CUIRect Button, Icon, Label;
+		Rail.HSplitTop(26.0f, &Button, &Rail);
+		Rail.HSplitTop(4.0f, nullptr, &Rail);
+		const bool Clicked = DoButton_MenuTab(pId, "", Active, &Button, IGraphics::CORNER_ALL, nullptr, &IdleColor, &ActiveColor, &HoverColor, 6.0f);
+		Button.VSplitLeft(26.0f, &Icon, &Label);
+		TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
+		Ui()->DoLabel(&Icon, pIcon, 11.0f, TEXTALIGN_MC);
+		TextRender()->SetRenderFlags(0);
+		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+		Ui()->DoLabel(&Label, pLabel, 11.0f, TEXTALIGN_ML);
+		return Clicked;
+	};
+
+	if(ClientState == IClient::STATE_OFFLINE)
+	{
+		static CButtonContainer s_Home, s_News, s_Internet, s_Lan, s_Favorites, s_Demos;
+		if(RailButton(&s_Home, FontIcon::HOUSE, Localize("Main menu"), false))
+			m_ShowStart = true;
+		if(RailButton(&s_News, FontIcon::NEWSPAPER, Localize("News"), ActivePage == PAGE_NEWS))
+			NewPage = PAGE_NEWS;
+		if(RailButton(&s_Internet, FontIcon::EARTH_AMERICAS, Localize("Internet"), ActivePage == PAGE_INTERNET))
+			NewPage = PAGE_INTERNET;
+		if(RailButton(&s_Lan, FontIcon::NETWORK_WIRED, Localize("LAN"), ActivePage == PAGE_LAN))
+			NewPage = PAGE_LAN;
+		if(RailButton(&s_Favorites, FontIcon::STAR, Localize("Favorites"), ActivePage == PAGE_FAVORITES))
+			NewPage = PAGE_FAVORITES;
+		if(RailButton(&s_Demos, FontIcon::CLAPPERBOARD, Localize("Demos"), ActivePage == PAGE_DEMOS))
+			NewPage = PAGE_DEMOS;
+	}
+	else
+	{
+		static CButtonContainer s_Game, s_Players, s_Info, s_Browser, s_Ghost, s_Vote, s_Demos;
+		if(RailButton(&s_Game, FontIcon::HOUSE, Localize("Game"), ActivePage == PAGE_GAME))
+			NewPage = PAGE_GAME;
+		if(RailButton(&s_Players, FontIcon::USER, Localize("Players"), ActivePage == PAGE_PLAYERS))
+			NewPage = PAGE_PLAYERS;
+		if(RailButton(&s_Info, FontIcon::INFO, Localize("Server info"), ActivePage == PAGE_SERVER_INFO))
+			NewPage = PAGE_SERVER_INFO;
+		if(RailButton(&s_Browser, FontIcon::EARTH_AMERICAS, Localize("Browser"), ActivePage == PAGE_NETWORK))
+			NewPage = PAGE_NETWORK;
+		if(GameClient()->m_GameInfo.m_Race && RailButton(&s_Ghost, FontIcon::FLAG_CHECKERED, Localize("Ghost"), ActivePage == PAGE_GHOST))
+			NewPage = PAGE_GHOST;
+		if(RailButton(&s_Vote, FontIcon::LIST_UL, Localize("Call vote"), ActivePage == PAGE_CALLVOTE))
+		{
+			NewPage = PAGE_CALLVOTE;
+			m_ControlPageOpening = true;
+		}
+		if(RailButton(&s_Demos, FontIcon::CLAPPERBOARD, Localize("Demos"), ActivePage == PAGE_DEMOS))
+			NewPage = PAGE_DEMOS;
+	}
+
+	// bottom group
+	CUIRect Bottom;
+	Rail.HSplitBottom(26.0f * 3.0f + 4.0f * 2.0f, &Rail, &Bottom);
+	Rail = Bottom;
+	static CButtonContainer s_Settings, s_Editor, s_Quit;
+	if(RailButton(&s_Settings, FontIcon::GEAR, Localize("Settings"), ActivePage == PAGE_SETTINGS))
+		NewPage = PAGE_SETTINGS;
+	if(RailButton(&s_Editor, FontIcon::PEN_TO_SQUARE, Localize("Editor"), false))
+		g_Config.m_ClEditor = 1;
+	if(RailButton(&s_Quit, FontIcon::POWER_OFF, Localize("Quit"), false))
+	{
+		if(GameClient()->Editor()->HasUnsavedData() || (GameClient()->CurrentRaceTime() / 60 >= g_Config.m_ClConfirmQuitTime && g_Config.m_ClConfirmQuitTime >= 0) || m_MenusIngameTouchControls.UnsavedChanges() || GameClient()->m_TouchControls.HasEditingChanges())
+			m_Popup = POPUP_QUIT;
+		else
+			Client()->Quit();
+	}
+
+	if(NewPage != -1)
+	{
+		if(ClientState == IClient::STATE_OFFLINE)
+			SetMenuPage(NewPage);
+		else
+			m_GamePage = NewPage;
+	}
+}
+
 void CMenus::RenderLoadingDirect(const char *pCaption, const char *pContent, std::optional<float> Progress)
 {
 	// TODO: not supported right now due to separate render thread
@@ -1064,8 +1163,15 @@ void CMenus::Render()
 		}
 		else
 		{
-			CUIRect TabBar, MainView;
-			Screen.HSplitTop(24.0f, &TabBar, &MainView);
+			CUIRect TabBar, MainView, Rail;
+			const bool SideRail = g_Config.m_NcUiTheme && g_Config.m_NcUiSideRail;
+			if(SideRail)
+			{
+				Screen.VSplitLeft(NC_RAIL_WIDTH, &Rail, &MainView);
+				MainView.VSplitLeft(8.0f, nullptr, &MainView);
+			}
+			else
+				Screen.HSplitTop(24.0f, &TabBar, &MainView);
 
 			if(m_MenuPage == PAGE_NEWS)
 			{
@@ -1088,7 +1194,10 @@ void CMenus::Render()
 				dbg_assert_failed("Invalid m_MenuPage: %d", m_MenuPage);
 			}
 
-			RenderMenubar(TabBar, ClientState);
+			if(SideRail)
+				RenderNcSideRail(Rail, ClientState);
+			else
+				RenderMenubar(TabBar, ClientState);
 		}
 		break;
 
@@ -1099,8 +1208,15 @@ void CMenus::Render()
 		}
 		else
 		{
-			CUIRect TabBar, MainView;
-			Screen.HSplitTop(24.0f, &TabBar, &MainView);
+			CUIRect TabBar, MainView, Rail;
+			const bool SideRail = g_Config.m_NcUiTheme && g_Config.m_NcUiSideRail;
+			if(SideRail)
+			{
+				Screen.VSplitLeft(NC_RAIL_WIDTH, &Rail, &MainView);
+				MainView.VSplitLeft(8.0f, nullptr, &MainView);
+			}
+			else
+				Screen.HSplitTop(24.0f, &TabBar, &MainView);
 
 			if(m_GamePage == PAGE_GAME)
 			{
@@ -1140,7 +1256,10 @@ void CMenus::Render()
 				dbg_assert_failed("Invalid m_GamePage: %d", m_GamePage);
 			}
 
-			RenderMenubar(TabBar, ClientState);
+			if(SideRail)
+				RenderNcSideRail(Rail, ClientState);
+			else
+				RenderMenubar(TabBar, ClientState);
 		}
 		break;
 
@@ -2464,6 +2583,23 @@ void CMenus::UpdateColors()
 		ms_ColorTabbarInactiveIngame = ColorRGBA(0.08f, 0.065f, 0.12f, 0.85f);
 		ms_ColorTabbarActiveIngame = ColorRGBA(0.06f, 0.05f, 0.10f, 0.94f);
 		ms_ColorTabbarHoverIngame = Accent.WithAlpha(0.55f);
+
+		if(g_Config.m_NcUiTransparentPanels)
+		{
+			ms_ColorTabbarInactiveOutgame.a *= 0.55f;
+			ms_ColorTabbarActiveOutgame.a *= 0.6f;
+			ms_ColorTabbarInactiveIngame.a *= 0.55f;
+			ms_ColorTabbarActiveIngame.a *= 0.6f;
+		}
+		if(g_Config.m_NcUiHighContrast)
+		{
+			ms_ColorTabbarInactiveOutgame = ColorRGBA(0.0f, 0.0f, 0.0f, 0.9f);
+			ms_ColorTabbarActiveOutgame = ColorRGBA(0.0f, 0.0f, 0.0f, 0.97f);
+			ms_ColorTabbarInactiveIngame = ColorRGBA(0.0f, 0.0f, 0.0f, 0.9f);
+			ms_ColorTabbarActiveIngame = ColorRGBA(0.0f, 0.0f, 0.0f, 0.97f);
+			ms_ColorTabbarHoverOutgame = Accent.WithAlpha(0.85f);
+			ms_ColorTabbarHoverIngame = Accent.WithAlpha(0.85f);
+		}
 	}
 }
 
@@ -2497,14 +2633,18 @@ ColorRGBA CMenus::NcButtonColor()
 {
 	if(!g_Config.m_NcUiTheme)
 		return ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f);
-	return ColorRGBA(0.12f, 0.10f, 0.18f, 0.85f);
+	if(g_Config.m_NcUiHighContrast)
+		return ColorRGBA(0.0f, 0.0f, 0.0f, 0.92f);
+	return ColorRGBA(0.12f, 0.10f, 0.18f, g_Config.m_NcUiTransparentPanels ? 0.5f : 0.85f);
 }
 
 ColorRGBA CMenus::NcPanelColor()
 {
 	if(!g_Config.m_NcUiTheme)
 		return ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f);
-	return ColorRGBA(0.07f, 0.06f, 0.11f, 0.85f);
+	if(g_Config.m_NcUiHighContrast)
+		return ColorRGBA(0.0f, 0.0f, 0.0f, 0.95f);
+	return ColorRGBA(0.07f, 0.06f, 0.11f, g_Config.m_NcUiTransparentPanels ? 0.45f : 0.85f);
 }
 
 void CMenus::RenderBackground()

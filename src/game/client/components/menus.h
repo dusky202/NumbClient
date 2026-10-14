@@ -477,6 +477,8 @@ protected:
 	void PopupConfirmDemoReplaceVideo();
 #endif
 	void RenderMenubar(CUIRect Box, IClient::EClientState ClientState);
+	void RenderNcSideRail(CUIRect Rail, IClient::EClientState ClientState);
+	static constexpr float NC_RAIL_WIDTH = 120.0f;
 	void RenderNews(CUIRect MainView);
 	static void ConchainBackgroundEntities(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainUpdateMusicState(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);

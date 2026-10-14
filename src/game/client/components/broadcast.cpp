@@ -57,7 +57,8 @@ void CBroadcast::RenderServerBroadcast()
 
 	const float Height = 300.0f;
 	const float Width = Height * Graphics()->ScreenAspect();
-	Graphics()->MapScreenToSize(Width, Height);
+	// NumbClient: movable broadcast
+	Graphics()->MapScreen(CScreenRect(-(float)g_Config.m_NcHudBroadcastX, -(float)g_Config.m_NcHudBroadcastY, Width, Height));
 
 	if(m_BroadcastRenderOffset < 0.0f)
 		m_BroadcastRenderOffset = Width / 2.0f - TextRender()->TextWidth(12.0f, m_aBroadcastText, -1, Width) / 2.0f;

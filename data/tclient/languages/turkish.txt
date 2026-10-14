@@ -1084,3 +1084,42 @@ Game background (.png)
 Game background opacity
 == Oyun arka planı opaklığı
 
+Left navigation rail
+== Sol menü çubuğu
+
+Transparent panels
+== Şeffaf paneller
+
+High contrast
+== Yüksek kontrast
+
+Interface scale
+== Arayüz ölçeği
+
+Apply
+== Uygula
+
+Antiping lag guard
+== Antiping lag koruması
+
+Spike threshold
+== Sıçrama eşiği
+
+Lag spike: antiping paused
+== Ping sıçraması: antiping duraklatıldı
+
+Built-in HUD position
+== Yerleşik HUD konumu
+
+Chat X
+== Sohbet X
+
+Chat Y
+== Sohbet Y
+
+Broadcast X
+== Duyuru X
+
+Broadcast Y
+== Duyuru Y
+

@@ -30,7 +30,61 @@ void CNumbMisc::OnReset()
 void CNumbMisc::OnStateChange(int NewState, int OldState)
 {
 	if(NewState != IClient::STATE_ONLINE)
+	{
 		m_HaveState = false;
+		m_AvgPing = -1.0f;
+		if(m_GuardActive)
+		{
+			g_Config.m_ClAntiPing = m_SavedAntiPing;
+			m_GuardActive = false;
+		}
+	}
+}
+
+void CNumbMisc::CheckLagGuard()
+{
+	const int LocalId = GameClient()->m_Snap.m_LocalClientId;
+	if(LocalId < 0 || !GameClient()->m_Snap.m_apPlayerInfos[LocalId])
+		return;
+	const float Ping = (float)GameClient()->m_Snap.m_apPlayerInfos[LocalId]->m_Latency;
+	const int64_t Now = time_get();
+
+	if(!g_Config.m_NcAntipingLagGuard)
+	{
+		if(m_GuardActive)
+		{
+			g_Config.m_ClAntiPing = m_SavedAntiPing;
+			m_GuardActive = false;
+		}
+		m_AvgPing = Ping;
+		return;
+	}
+
+	if(m_AvgPing < 0.0f)
+		m_AvgPing = Ping;
+
+	const bool Spike = Ping > m_AvgPing + g_Config.m_NcAntipingLagGuardSpike;
+	if(Spike)
+	{
+		if(!m_GuardActive && g_Config.m_ClAntiPing)
+		{
+			m_SavedAntiPing = g_Config.m_ClAntiPing;
+			g_Config.m_ClAntiPing = 0;
+			m_GuardActive = true;
+			GameClient()->m_Chat.Echo(TCLocalize("Lag spike: antiping paused"));
+		}
+		m_GuardUntil = Now + time_freq() * 2;
+	}
+	else
+	{
+		// only learn the average from normal pings
+		m_AvgPing = m_AvgPing * 0.98f + Ping * 0.02f;
+		if(m_GuardActive && Now > m_GuardUntil)
+		{
+			g_Config.m_ClAntiPing = m_SavedAntiPing;
+			m_GuardActive = false;
+		}
+	}
 }
 
 void CNumbMisc::ApplyProcessPriority()
@@ -90,5 +144,6 @@ void CNumbMisc::OnRender()
 
 	CheckAutoTeamLock();
 	CheckSpecMoved();
+	CheckLagGuard();
 	m_HaveState = true;
 }

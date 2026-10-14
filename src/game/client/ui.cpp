@@ -452,7 +452,7 @@ float CUi::ButtonColorMul(const void *pId)
 
 const CUIRect *CUi::Screen()
 {
-	m_Screen.h = 600.0f;
+	m_Screen.h = 600.0f * 100.0f / std::clamp(g_Config.m_NcUiScale, 50, 150); // NumbClient interface scale
 	m_Screen.w = Graphics()->ScreenAspect() * m_Screen.h;
 	return &m_Screen;
 }

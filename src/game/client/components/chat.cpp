@@ -1302,7 +1302,8 @@ void CChat::OnRender()
 
 	const float Height = 300.0f;
 	const float Width = Height * Graphics()->ScreenAspect();
-	Graphics()->MapScreenToSize(Width, Height);
+	// NumbClient: movable chat
+	Graphics()->MapScreen(CScreenRect(-(float)g_Config.m_NcHudChatX, -(float)g_Config.m_NcHudChatY, Width, Height));
 
 	float x = 5.0f;
 

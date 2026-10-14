@@ -22,6 +22,12 @@ private:
 	void ApplyProcessPriority();
 	void CheckAutoTeamLock();
 	void CheckSpecMoved();
+	void CheckLagGuard();
+
+	float m_AvgPing = -1.0f;
+	bool m_GuardActive = false;
+	int m_SavedAntiPing = 0;
+	int64_t m_GuardUntil = 0;
 };
 
 #endif

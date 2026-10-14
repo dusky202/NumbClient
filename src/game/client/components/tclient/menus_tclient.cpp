@@ -3193,6 +3193,16 @@ void CMenus::RenderSettingsNumbClient(CUIRect MainView)
 		}
 	}
 
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcAntipingLagGuard, TCLocalize("Antiping lag guard"), &g_Config.m_NcAntipingLagGuard, &Column, LineSize);
+	if(g_Config.m_NcAntipingLagGuard)
+		Slider(Column, &g_Config.m_NcAntipingLagGuardSpike, TCLocalize("Spike threshold"), 10, 500, "ms");
+
+	Headline(Column, TCLocalize("Built-in HUD position"));
+	Slider(Column, &g_Config.m_NcHudChatX, TCLocalize("Chat X"), -500, 500, "");
+	Slider(Column, &g_Config.m_NcHudChatY, TCLocalize("Chat Y"), -300, 300, "");
+	Slider(Column, &g_Config.m_NcHudBroadcastX, TCLocalize("Broadcast X"), -500, 500, "");
+	Slider(Column, &g_Config.m_NcHudBroadcastY, TCLocalize("Broadcast Y"), -300, 300, "");
+
 	Headline(Column, TCLocalize("Optimizer"));
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcNoParticles, TCLocalize("Disable particles"), &g_Config.m_NcNoParticles, &Column, LineSize);
 #if defined(CONF_FAMILY_WINDOWS)
@@ -3317,10 +3327,27 @@ void CMenus::RenderSettingsNumbClient(CUIRect MainView)
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcSpecMovedNotify, TCLocalize("Notify when moved to spectators"), &g_Config.m_NcSpecMovedNotify, &Column, LineSize);
 
 	Headline(Column, TCLocalize("Menu Theme"));
+	{
+		static int s_PendingScale = -1;
+		if(s_PendingScale < 0)
+			s_PendingScale = g_Config.m_NcUiScale;
+		Column.HSplitTop(LineSize, &Button, &Column);
+		CUIRect Apply;
+		Button.VSplitRight(70.0f, &Button, &Apply);
+		Ui()->DoScrollbarOption(&s_PendingScale, &s_PendingScale, &Button, TCLocalize("Interface scale"), 50, 150, &CUi::ms_LinearScrollbarScale, 0, "%");
+		static CButtonContainer s_ApplyScale;
+		Apply.VSplitLeft(5.0f, nullptr, &Apply);
+		if(DoButton_Menu(&s_ApplyScale, TCLocalize("Apply"), s_PendingScale != g_Config.m_NcUiScale, &Apply))
+			g_Config.m_NcUiScale = s_PendingScale;
+		Column.HSplitTop(MarginSmall, nullptr, &Column);
+	}
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcUiTheme, TCLocalize("Dark NumbClient theme"), &g_Config.m_NcUiTheme, &Column, LineSize);
 	if(g_Config.m_NcUiTheme)
 	{
 		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcUiAnimatedBackground, TCLocalize("Animated background"), &g_Config.m_NcUiAnimatedBackground, &Column, LineSize);
+		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcUiSideRail, TCLocalize("Left navigation rail"), &g_Config.m_NcUiSideRail, &Column, LineSize);
+		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcUiTransparentPanels, TCLocalize("Transparent panels"), &g_Config.m_NcUiTransparentPanels, &Column, LineSize);
+		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcUiHighContrast, TCLocalize("High contrast"), &g_Config.m_NcUiHighContrast, &Column, LineSize);
 		Column.HSplitTop(MarginSmall, nullptr, &Column);
 		static CButtonContainer s_UiAccentColor;
 		DoLine_ColorPicker(&s_UiAccentColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Theme accent color"), &g_Config.m_NcUiAccentColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcUiAccentColor, true)), false, nullptr, true);
