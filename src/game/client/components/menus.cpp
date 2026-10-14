@@ -711,7 +711,7 @@ void CMenus::RenderLoadingDirect(const char *pCaption, const char *pContent, std
 		// the menu background is not loaded yet.
 		return;
 	}
-	if(!GameClient()->m_MenuBackground.Render())
+	if(g_Config.m_NcUiTheme || !GameClient()->m_MenuBackground.Render())
 	{
 		RenderBackground();
 	}
@@ -722,7 +722,7 @@ void CMenus::RenderLoadingDirect(const char *pCaption, const char *pContent, std
 	Ui()->Screen()->Margin(160.0f, &Box);
 
 	Graphics()->TextureClear();
-	Box.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f), IGraphics::CORNER_ALL, 15.0f);
+	Box.Draw(g_Config.m_NcUiTheme ? NcPanelColor() : ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f), IGraphics::CORNER_ALL, 15.0f);
 	Box.Margin(20.0f, &Box);
 
 	CUIRect Label;
@@ -1023,7 +1023,7 @@ void CMenus::Render()
 	}
 	else
 	{
-		if(!GameClient()->m_MenuBackground.Render())
+		if(g_Config.m_NcUiTheme || !GameClient()->m_MenuBackground.Render())
 		{
 			RenderBackground();
 		}
@@ -2451,6 +2451,39 @@ void CMenus::UpdateColors()
 		ms_GuiColor.a);
 
 	ms_ColorTabbarHoverIngame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.75f);
+
+	if(g_Config.m_NcUiTheme)
+	{
+		const ColorRGBA Accent = NcAccentColor();
+		ms_GuiColor = ColorRGBA(0.055f, 0.045f, 0.08f, 1.0f);
+
+		ms_ColorTabbarInactiveOutgame = ColorRGBA(0.08f, 0.065f, 0.12f, 0.80f);
+		ms_ColorTabbarActiveOutgame = ColorRGBA(0.10f, 0.08f, 0.15f, 0.92f);
+		ms_ColorTabbarHoverOutgame = Accent.WithAlpha(0.45f);
+
+		ms_ColorTabbarInactiveIngame = ColorRGBA(0.08f, 0.065f, 0.12f, 0.85f);
+		ms_ColorTabbarActiveIngame = ColorRGBA(0.06f, 0.05f, 0.10f, 0.94f);
+		ms_ColorTabbarHoverIngame = Accent.WithAlpha(0.55f);
+	}
+}
+
+ColorRGBA CMenus::NcAccentColor()
+{
+	return color_cast<ColorRGBA>(ColorHSLA(g_Config.m_NcUiAccentColor, true));
+}
+
+ColorRGBA CMenus::NcButtonColor()
+{
+	if(!g_Config.m_NcUiTheme)
+		return ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f);
+	return ColorRGBA(0.12f, 0.10f, 0.18f, 0.85f);
+}
+
+ColorRGBA CMenus::NcPanelColor()
+{
+	if(!g_Config.m_NcUiTheme)
+		return ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f);
+	return ColorRGBA(0.07f, 0.06f, 0.11f, 0.85f);
 }
 
 void CMenus::RenderBackground()
@@ -2458,6 +2491,53 @@ void CMenus::RenderBackground()
 	const float ScreenHeight = 300.0f;
 	const float ScreenWidth = ScreenHeight * Graphics()->ScreenAspect();
 	Graphics()->MapScreenToSize(ScreenWidth, ScreenHeight);
+
+	if(g_Config.m_NcUiTheme)
+	{
+		// NumbClient: dark gradient with slowly drifting accent glows
+		const ColorRGBA Accent = NcAccentColor();
+		const ColorRGBA Top(0.035f, 0.03f, 0.055f, 1.0f);
+		const ColorRGBA Bottom(0.075f, 0.055f, 0.11f, 1.0f);
+		Graphics()->TextureClear();
+		Graphics()->DrawRect4(0.0f, 0.0f, ScreenWidth, ScreenHeight, Top, Top, Bottom, Bottom, IGraphics::CORNER_NONE, 0.0f);
+
+		const float Time = g_Config.m_NcUiAnimatedBackground ? (float)Client()->GlobalTime() : 0.0f;
+		struct SGlow
+		{
+			float m_X, m_Y, m_R, m_Speed, m_Phase, m_Alpha;
+		};
+		static const SGlow s_aGlows[] = {
+			{0.15f, 0.25f, 140.0f, 0.07f, 0.0f, 0.10f},
+			{0.85f, 0.70f, 170.0f, 0.05f, 2.1f, 0.09f},
+			{0.55f, 0.95f, 120.0f, 0.09f, 4.2f, 0.07f},
+			{0.40f, 0.10f, 90.0f, 0.11f, 1.3f, 0.06f},
+		};
+		Graphics()->QuadsBegin();
+		for(const SGlow &Glow : s_aGlows)
+		{
+			const float x = ScreenWidth * Glow.m_X + std::sin(Time * Glow.m_Speed + Glow.m_Phase) * 40.0f;
+			const float y = ScreenHeight * Glow.m_Y + std::cos(Time * Glow.m_Speed * 0.8f + Glow.m_Phase) * 25.0f;
+			// layered circles fake a soft radial falloff
+			for(int i = 6; i >= 1; i--)
+			{
+				const float f = i / 6.0f;
+				Graphics()->SetColor(Accent.r, Accent.g, Accent.b, Glow.m_Alpha * (1.0f - f) * 0.6f + 0.004f);
+				Graphics()->DrawCircle(x, y, Glow.m_R * f, 48);
+			}
+		}
+		Graphics()->QuadsEnd();
+
+		// subtle vignette
+		Graphics()->TextureSet(m_TextureBlob);
+		Graphics()->QuadsBegin();
+		Graphics()->SetColor(1.0f, 1.0f, 1.0f, 0.8f);
+		const IGraphics::CQuadItem VignetteItem = IGraphics::CQuadItem(-100, -100, ScreenWidth + 200, ScreenHeight + 200);
+		Graphics()->QuadsDrawTL(&VignetteItem, 1);
+		Graphics()->QuadsEnd();
+
+		Ui()->MapScreen();
+		return;
+	}
 
 	// render background color
 	Graphics()->TextureClear();

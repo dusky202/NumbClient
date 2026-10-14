@@ -305,3 +305,6 @@ MACRO_CONFIG_INT(NcNinjaTimer, nc_ninja_timer, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG
 MACRO_CONFIG_INT(NcShowHitbox, nc_show_hitbox, 0, 0, 2, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Draw the 28x28 physics hitbox (0 = off, 1 = self, 2 = everyone)")
 MACRO_CONFIG_COL(NcHitboxColor, nc_hitbox_color, 0x9955FF80, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_COLALPHA, "Hitbox color")
 MACRO_CONFIG_COL(NcHudAccentColor, nc_hud_accent_color, 0xFFD58080, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_COLALPHA, "Accent color of NumbClient HUD widgets")
+MACRO_CONFIG_INT(NcUiTheme, nc_ui_theme, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Use the dark NumbClient menu theme")
+MACRO_CONFIG_COL(NcUiAccentColor, nc_ui_accent_color, 0xFFD5A070, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_COLALPHA, "Accent color of the NumbClient menu theme")
+MACRO_CONFIG_INT(NcUiAnimatedBackground, nc_ui_animated_background, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Animated glow in the NumbClient menu background")

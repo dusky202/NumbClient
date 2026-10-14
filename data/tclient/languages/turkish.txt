@@ -961,3 +961,15 @@ Open HUD editor (drag & drop)
 HUD editor: drag widgets with the mouse, ESC to close
 == HUD editörü: araçları fareyle sürükle, kapatmak için ESC
 
+Menu Theme
+== Menü Teması
+
+Dark NumbClient theme
+== Koyu NumbClient teması
+
+Animated background
+== Hareketli arka plan
+
+Theme accent color
+== Tema vurgu rengi
+

@@ -3169,6 +3169,16 @@ void CMenus::RenderSettingsNumbClient(CUIRect MainView)
 		DoLine_ColorPicker(&s_HitboxColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Hitbox color"), &g_Config.m_NcHitboxColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcHitboxColor, true)), false, nullptr, true);
 	}
 
+	Headline(Column, TCLocalize("Menu Theme"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcUiTheme, TCLocalize("Dark NumbClient theme"), &g_Config.m_NcUiTheme, &Column, LineSize);
+	if(g_Config.m_NcUiTheme)
+	{
+		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcUiAnimatedBackground, TCLocalize("Animated background"), &g_Config.m_NcUiAnimatedBackground, &Column, LineSize);
+		Column.HSplitTop(MarginSmall, nullptr, &Column);
+		static CButtonContainer s_UiAccentColor;
+		DoLine_ColorPicker(&s_UiAccentColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Theme accent color"), &g_Config.m_NcUiAccentColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcUiAccentColor, true)), false, nullptr, true);
+	}
+
 	CUIRect ScrollRegion;
 	ScrollRegion.x = MainView.x;
 	ScrollRegion.y = std::max(LeftBottom, Column.y) + MarginSmall;
