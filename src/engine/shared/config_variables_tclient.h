@@ -315,3 +315,4 @@ MACRO_CONFIG_INT(NcAutoTeamLock, nc_auto_team_lock, 0, 0, 1, CFGFLAG_CLIENT | CF
 MACRO_CONFIG_INT(NcSpecMovedNotify, nc_spec_moved_notify, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Notify when you are moved to spectators")
 MACRO_CONFIG_STR(NcMenuBgImage, nc_menu_bg_image, 256, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Custom menu background image (png path relative to the data/save folder, empty = theme)")
 MACRO_CONFIG_INT(NcMenuBgImageAlpha, nc_menu_bg_image_alpha, 70, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Opacity of the custom menu background image")
+MACRO_CONFIG_INT(NcHammerIndicator, nc_hammer_indicator, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show hammer hit zone and the direction hit tees would be pushed (informational only)")

@@ -1036,3 +1036,6 @@ Background image (.png)
 Background image opacity
 == Arka plan resmi opaklığı
 
+Hammer hit zone & push direction
+== Hammer vuruş alanı ve itme yönü
+

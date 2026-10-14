@@ -18,6 +18,9 @@ public:
 private:
 	void RenderHitbox(vec2 Pos);
 	void RenderNinjaTimer(int ClientId, vec2 Pos);
+	void RenderHammerIndicator();
+	void DrawCircleOutline(vec2 Center, float Radius, ColorRGBA Color);
+	void DrawArrow(vec2 From, vec2 To, ColorRGBA Color);
 };
 
 // Screen-space HUD widgets.

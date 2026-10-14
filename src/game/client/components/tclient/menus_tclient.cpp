@@ -3215,6 +3215,7 @@ void CMenus::RenderSettingsNumbClient(CUIRect MainView)
 	Headline(Column, TCLocalize("World Overlays"));
 
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcNinjaTimer, TCLocalize("Ninja timer above tees"), &g_Config.m_NcNinjaTimer, &Column, LineSize);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcHammerIndicator, TCLocalize("Hammer hit zone & push direction"), &g_Config.m_NcHammerIndicator, &Column, LineSize);
 
 	Column.HSplitTop(LineSize, &Button, &Column);
 	static CButtonContainer s_HitboxButtons[3];

@@ -78,11 +78,88 @@ void CNumbWorld::RenderNinjaTimer(int ClientId, vec2 Pos)
 	TextRender()->Text(Pos.x - TextW / 2.0f, y - FontSize - 2.0f, FontSize, aBuf);
 }
 
+void CNumbWorld::DrawCircleOutline(vec2 Center, float Radius, ColorRGBA Color)
+{
+	constexpr int Segments = 48;
+	IGraphics::CLineItem aLines[Segments];
+	for(int i = 0; i < Segments; i++)
+	{
+		const float a0 = i / (float)Segments * 2.0f * pi;
+		const float a1 = (i + 1) / (float)Segments * 2.0f * pi;
+		aLines[i] = IGraphics::CLineItem(Center + direction(a0) * Radius, Center + direction(a1) * Radius);
+	}
+	Graphics()->TextureClear();
+	Graphics()->LinesBegin();
+	Graphics()->SetColor(Color);
+	Graphics()->LinesDraw(aLines, Segments);
+	Graphics()->LinesEnd();
+}
+
+void CNumbWorld::DrawArrow(vec2 From, vec2 To, ColorRGBA Color)
+{
+	const vec2 Dir = normalize(To - From);
+	const vec2 Side = vec2(-Dir.y, Dir.x);
+	const float Head = 9.0f;
+	const IGraphics::CLineItem aLines[] = {
+		IGraphics::CLineItem(From, To),
+		IGraphics::CLineItem(To, To - Dir * Head + Side * Head * 0.6f),
+		IGraphics::CLineItem(To, To - Dir * Head - Side * Head * 0.6f),
+	};
+	Graphics()->TextureClear();
+	Graphics()->LinesBegin();
+	Graphics()->SetColor(Color);
+	Graphics()->LinesDraw(aLines, std::size(aLines));
+	Graphics()->LinesEnd();
+}
+
+// Mirrors the hammer logic of the game (see CCharacter::FireWeapon, WEAPON_HAMMER):
+// the hit zone is centered 0.75 tee-sizes in front of you along your aim, and a hit tee
+// is pushed along normalize(normalize(TargetPos - YourPos) + (0, -1.1)).
+// This only visualizes the result of your own aim, it never changes input.
+void CNumbWorld::RenderHammerIndicator()
+{
+	const int LocalId = GameClient()->m_Snap.m_LocalClientId;
+	if(LocalId < 0 || !GameClient()->m_Snap.m_aCharacters[LocalId].m_Active || Client()->State() != IClient::STATE_ONLINE)
+		return;
+	const CCharacterCore &LocalCore = GameClient()->m_aClients[LocalId].m_Predicted;
+	if(LocalCore.m_ActiveWeapon != WEAPON_HAMMER || LocalCore.m_HammerHitDisabled)
+		return;
+
+	const CNetObj_PlayerInput &Input = GameClient()->m_Controls.m_aInputData[g_Config.m_ClDummy];
+	vec2 Aim = vec2(Input.m_TargetX, Input.m_TargetY);
+	if(length(Aim) < 0.0001f)
+		return;
+	Aim = normalize(Aim);
+
+	const float Proximity = CCharacterCore::PhysicalSize();
+	const vec2 LocalPos = GameClient()->m_aClients[LocalId].m_RenderPos;
+	const vec2 HitCenter = LocalPos + Aim * Proximity * 0.75f;
+	const float HitRadius = Proximity * 0.5f + Proximity; // search radius + target proximity radius
+
+	const ColorRGBA Accent = ConfigColor(g_Config.m_NcHudAccentColor);
+	bool AnyHit = false;
+	for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++)
+	{
+		if(ClientId == LocalId || !GameClient()->m_Snap.m_aCharacters[ClientId].m_Active)
+			continue;
+		const vec2 TargetPos = GameClient()->m_aClients[ClientId].m_RenderPos;
+		if(distance(TargetPos, HitCenter) >= HitRadius)
+			continue;
+		AnyHit = true;
+
+		vec2 Dir = length(TargetPos - LocalPos) > 0.0f ? normalize(TargetPos - LocalPos) : vec2(0.0f, -1.0f);
+		const vec2 Push = normalize(Dir + vec2(0.0f, -1.1f));
+		DrawCircleOutline(TargetPos, Proximity * 0.5f + 2.0f, ColorRGBA(1.0f, 0.85f, 0.3f, 0.9f));
+		DrawArrow(TargetPos, TargetPos + Push * 70.0f, ColorRGBA(1.0f, 0.85f, 0.3f, 0.95f));
+	}
+	DrawCircleOutline(HitCenter, HitRadius, Accent.WithAlpha(AnyHit ? 0.8f : 0.35f));
+}
+
 void CNumbWorld::OnRender()
 {
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
-	if(!g_Config.m_NcShowHitbox && !g_Config.m_NcNinjaTimer)
+	if(!g_Config.m_NcShowHitbox && !g_Config.m_NcNinjaTimer && !g_Config.m_NcHammerIndicator)
 		return;
 
 	// make sure we draw in world coordinates
@@ -105,6 +182,8 @@ void CNumbWorld::OnRender()
 		if(g_Config.m_NcNinjaTimer)
 			RenderNinjaTimer(ClientId, Pos);
 	}
+	if(g_Config.m_NcHammerIndicator)
+		RenderHammerIndicator();
 	TextRender()->TextColor(TextRender()->DefaultTextColor());
 	Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 }
