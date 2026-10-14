@@ -1180,3 +1180,6 @@ Smaller values fit more on the screen.
 Menu background
 == Menü arka planı
 
+Active: 40 ms, your tee only
+== Aktif: 40 ms, sadece senin tee'n
+

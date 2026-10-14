@@ -3155,13 +3155,12 @@ void CMenus::RenderSettingsNumbClient(CUIRect MainView)
 		Toggle(&g_Config.m_TcFastInput, TCLocalize("Aggressive"));
 		Column.HSplitTop(LineSize, &Label, &Column);
 		TextRender()->TextColor(g_Config.m_TcFastInput ? Accent.WithAlpha(1.0f) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.5f));
-		Ui()->DoLabel(&Label, g_Config.m_TcFastInput ? TCLocalize("Active: 40 ms, your tee only, instant hook re-prediction") : TCLocalize("Off"), 12.0f, TEXTALIGN_ML);
+		Ui()->DoLabel(&Label, g_Config.m_TcFastInput ? TCLocalize("Active: 40 ms, your tee only") : TCLocalize("Off"), 12.0f, TEXTALIGN_ML);
 		TextRender()->TextColor(TextRender()->DefaultTextColor());
 		EndCard();
 
 		BeginCard(TCLocalize("Connection"), nullptr);
-		if(!g_Config.m_TcFastInput)
-			Toggle(&g_Config.m_ClSubTickAiming, TCLocalize("Sub-Tick aiming"));
+		Toggle(&g_Config.m_ClSubTickAiming, TCLocalize("Sub-Tick aiming"));
 		Toggle(&g_Config.m_NcAntipingLagGuard, TCLocalize("Antiping lag guard"));
 		if(g_Config.m_NcAntipingLagGuard)
 			Slider(&g_Config.m_NcAntipingLagGuardSpike, TCLocalize("Spike threshold"), 10, 500, "ms");
