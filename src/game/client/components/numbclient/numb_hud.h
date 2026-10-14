@@ -4,9 +4,12 @@
 #include <base/vmath.h>
 
 #include <engine/console.h>
+#include <engine/graphics.h>
 #include <engine/input.h>
 
 #include <game/client/component.h>
+
+#include <vector>
 
 // World-space overlays: hitbox and ninja timer. Rendered after the players.
 class CNumbWorld : public CComponent
@@ -19,8 +22,23 @@ private:
 	void RenderHitbox(vec2 Pos);
 	void RenderNinjaTimer(int ClientId, vec2 Pos);
 	void RenderHammerIndicator();
+	void RenderFog(const CScreenRect &ScreenRect);
 	void DrawCircleOutline(vec2 Center, float Radius, ColorRGBA Color);
 	void DrawArrow(vec2 From, vec2 To, ColorRGBA Color);
+};
+
+// Custom in-game background image drawn over the map's background layers.
+class CNumbGameBg : public CComponent
+{
+public:
+	int Sizeof() const override { return sizeof(*this); }
+	void OnRender() override;
+
+private:
+	IGraphics::CTextureHandle m_Texture;
+	char m_aLoaded[256] = "";
+	int m_Width = 0;
+	int m_Height = 0;
 };
 
 // Screen-space HUD widgets.
@@ -32,6 +50,7 @@ public:
 	void OnInit() override;
 	void OnRender() override;
 	void OnMessage(int MsgType, void *pRawMsg) override;
+	void OnMapLoad() override;
 
 	void ResetSession();
 	bool OnCursorMove(float x, float y, IInput::ECursorType CursorType) override;
@@ -56,6 +75,7 @@ private:
 		WIDGET_INPUT,
 		WIDGET_SESSION,
 		WIDGET_TEAM,
+		WIDGET_PROGRESS,
 		NUM_WIDGETS
 	};
 	bool m_EditorActive = false;
@@ -75,6 +95,14 @@ private:
 	void RenderInputVisualizer();
 	void RenderSessionStats();
 	void RenderTeamIndicator();
+	void RenderMapProgress();
+
+	// map progress: BFS path distance (in tiles) to the nearest finish tile
+	std::vector<int> m_vFinishDist;
+	int m_MapWidth = 0;
+	int m_MapHeight = 0;
+	int m_StartDist = -1;
+	float m_LastProgress = 0.0f;
 
 	static void ConSessionReset(IConsole::IResult *pResult, void *pUserData);
 };

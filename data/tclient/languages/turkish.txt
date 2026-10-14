@@ -1039,3 +1039,48 @@ Background image opacity
 Hammer hit zone & push direction
 == Hammer vuruş alanı ve itme yönü
 
+Map progress & estimated finish
+== Harita ilerlemesi ve tahmini bitiş
+
+Progress
+== İlerleme
+
+Est. finish
+== Tahmini bitiş
+
+View
+== Görünüm
+
+Stretched aspect
+== Esnetilmiş en-boy
+
+Custom
+== Özel
+
+Aspect width
+== En oranı
+
+Aspect height
+== Boy oranı
+
+Fog
+== Sis
+
+Circle
+== Daire
+
+Rectangle
+== Dikdörtgen
+
+Fog radius
+== Sis yarıçapı
+
+Fog opacity
+== Sis opaklığı
+
+Game background (.png)
+== Oyun arka planı (.png)
+
+Game background opacity
+== Oyun arka planı opaklığı
+

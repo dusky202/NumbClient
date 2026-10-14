@@ -3134,6 +3134,14 @@ void CMenus::RenderSettingsNumbClient(CUIRect MainView)
 		Column.HSplitTop(MarginSmall, nullptr, &Column);
 	}
 
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcMapProgress, TCLocalize("Map progress & estimated finish"), &g_Config.m_NcMapProgress, &Column, LineSize);
+	if(g_Config.m_NcMapProgress)
+	{
+		Slider(Column, &g_Config.m_NcMapProgressX, TCLocalize("Position X"), 0, 1000, "\u2030");
+		Slider(Column, &g_Config.m_NcMapProgressY, TCLocalize("Position Y"), 0, 1000, "\u2030");
+		Column.HSplitTop(MarginSmall, nullptr, &Column);
+	}
+
 	Column.HSplitTop(MarginSmall, nullptr, &Column);
 	static CButtonContainer s_AccentColor;
 	DoLine_ColorPicker(&s_AccentColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Widget accent color"), &g_Config.m_NcHudAccentColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcHudAccentColor, true)), false, nullptr, true);
@@ -3240,6 +3248,68 @@ void CMenus::RenderSettingsNumbClient(CUIRect MainView)
 		static CButtonContainer s_HitboxColor;
 		DoLine_ColorPicker(&s_HitboxColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Hitbox color"), &g_Config.m_NcHitboxColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcHitboxColor, true)), false, nullptr, true);
 	}
+
+	Headline(Column, TCLocalize("View"));
+	Column.HSplitTop(LineSize, &Button, &Column);
+	{
+		CUIRect Lbl, Btns;
+		Button.VSplitLeft(120.0f, &Lbl, &Btns);
+		Ui()->DoLabel(&Lbl, TCLocalize("Stretched aspect"), FontSize, TEXTALIGN_ML);
+		const char *apNames[] = {TCLocalize("Off"), "4:3", "5:4", "16:10", "3:2", TCLocalize("Custom")};
+		static CButtonContainer s_aAspectButtons[6];
+		const float BtnW = Btns.w / 6.0f;
+		for(int i = 0; i < 6; i++)
+		{
+			CUIRect B;
+			Btns.VSplitLeft(BtnW, &B, &Btns);
+			const int Corners = i == 0 ? IGraphics::CORNER_L : i == 5 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE;
+			if(DoButton_MenuTab(&s_aAspectButtons[i], apNames[i], g_Config.m_NcAspectPreset == i, &B, Corners))
+				g_Config.m_NcAspectPreset = i;
+		}
+	}
+	Column.HSplitTop(MarginSmall, nullptr, &Column);
+	if(g_Config.m_NcAspectPreset == 5)
+	{
+		Slider(Column, &g_Config.m_NcAspectCustomW, TCLocalize("Aspect width"), 1, 32, "");
+		Slider(Column, &g_Config.m_NcAspectCustomH, TCLocalize("Aspect height"), 1, 32, "");
+	}
+
+	Column.HSplitTop(LineSize, &Button, &Column);
+	{
+		CUIRect Lbl, Btns;
+		Button.VSplitLeft(120.0f, &Lbl, &Btns);
+		Ui()->DoLabel(&Lbl, TCLocalize("Fog"), FontSize, TEXTALIGN_ML);
+		const char *apNames[] = {TCLocalize("Off"), TCLocalize("Circle"), TCLocalize("Rectangle")};
+		static CButtonContainer s_aFogButtons[3];
+		const float BtnW = Btns.w / 3.0f;
+		for(int i = 0; i < 3; i++)
+		{
+			CUIRect B;
+			Btns.VSplitLeft(BtnW, &B, &Btns);
+			const int Corners = i == 0 ? IGraphics::CORNER_L : i == 2 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE;
+			if(DoButton_MenuTab(&s_aFogButtons[i], apNames[i], g_Config.m_NcFog == i, &B, Corners))
+				g_Config.m_NcFog = i;
+		}
+	}
+	Column.HSplitTop(MarginSmall, nullptr, &Column);
+	if(g_Config.m_NcFog)
+	{
+		Slider(Column, &g_Config.m_NcFogRadius, TCLocalize("Fog radius"), 100, 3000, "");
+		Slider(Column, &g_Config.m_NcFogAlpha, TCLocalize("Fog opacity"), 0, 100, "%");
+	}
+
+	Column.HSplitTop(LineSize, &Button, &Column);
+	{
+		CUIRect Lbl, Box;
+		Button.VSplitLeft(150.0f, &Lbl, &Box);
+		Ui()->DoLabel(&Lbl, TCLocalize("Game background (.png)"), FontSize, TEXTALIGN_ML);
+		static CLineInput s_GameBgInput(g_Config.m_NcGameBgImage, sizeof(g_Config.m_NcGameBgImage));
+		s_GameBgInput.SetEmptyText("numbclient/game_bg.png");
+		Ui()->DoEditBox(&s_GameBgInput, &Box, EditBoxFontSize);
+	}
+	Column.HSplitTop(MarginSmall, nullptr, &Column);
+	if(g_Config.m_NcGameBgImage[0])
+		Slider(Column, &g_Config.m_NcGameBgImageAlpha, TCLocalize("Game background opacity"), 0, 100, "%");
 
 	Headline(Column, TCLocalize("Quality of Life"));
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcZoomHalfSteps, TCLocalize("Zoom in half steps"), &g_Config.m_NcZoomHalfSteps, &Column, LineSize);

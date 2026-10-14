@@ -31,6 +31,8 @@ void IGraphics::CalcScreenParams(float Aspect, float Zoom, float *pWidth, float 
 CScreenRect IGraphics::MapScreenToWorld(float CenterX, float CenterY, float ParallaxX, float ParallaxY,
 	float ParallaxZoom, float OffsetX, float OffsetY, float Aspect, float Zoom) const
 {
+	if(m_WorldAspectOverride > 0.0f)
+		Aspect = m_WorldAspectOverride;
 	float Width, Height;
 	CalcScreenParams(Aspect, Zoom, &Width, &Height);
 

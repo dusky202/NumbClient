@@ -239,6 +239,10 @@ public:
 class IGraphics : public IInterface
 {
 	MACRO_INTERFACE("graphics")
+public:
+	// NumbClient: when > 0, overrides the aspect ratio used for world mapping (stretched view)
+	float m_WorldAspectOverride = 0.0f;
+
 protected:
 	int m_ScreenWidth;
 	int m_ScreenHeight;

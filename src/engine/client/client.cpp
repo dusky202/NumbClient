@@ -1244,6 +1244,7 @@ void CClient::Render()
 {
 	if(m_EditorActive)
 	{
+		Graphics()->m_WorldAspectOverride = 0.0f; // NumbClient: never stretch the editor
 		m_pEditor->OnRender();
 	}
 	else

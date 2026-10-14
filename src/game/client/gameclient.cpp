@@ -140,6 +140,7 @@ void CGameClient::OnConsoleInit()
 					      &m_Censor,
 					      &m_Background, // render instead of m_MapLayersBackground when g_Config.m_ClOverlayEntities == 100
 					      &m_MapLayersBackground, // first to render
+					      &m_NumbGameBg, // NumbClient
 					      &m_BgDraw, // TClient
 					      &m_Particles.m_RenderTrail,
 					      &m_Particles.m_RenderTrailExtra,
@@ -805,6 +806,20 @@ void CGameClient::UpdatePositions()
 
 void CGameClient::OnRender()
 {
+	// NumbClient: stretched aspect ratio for the game world only
+	{
+		float Aspect = 0.0f;
+		switch(g_Config.m_NcAspectPreset)
+		{
+		case 1: Aspect = 4.0f / 3.0f; break;
+		case 2: Aspect = 5.0f / 4.0f; break;
+		case 3: Aspect = 16.0f / 10.0f; break;
+		case 4: Aspect = 3.0f / 2.0f; break;
+		case 5: Aspect = g_Config.m_NcAspectCustomW / (float)g_Config.m_NcAspectCustomH; break;
+		}
+		Graphics()->m_WorldAspectOverride = (Client()->State() == IClient::STATE_ONLINE || Client()->State() == IClient::STATE_DEMOPLAYBACK) ? Aspect : 0.0f;
+	}
+
 	const ColorRGBA ClearColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClOverlayEntities ? g_Config.m_ClBackgroundEntitiesColor : g_Config.m_ClBackgroundColor));
 	Graphics()->Clear(ClearColor.r, ClearColor.g, ClearColor.b);
 

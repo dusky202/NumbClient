@@ -239,6 +239,7 @@ public:
 	CNumbWorld m_NumbWorld; // NumbClient
 	CNumbHud m_NumbHud; // NumbClient
 	CNumbMisc m_NumbMisc; // NumbClient
+	CNumbGameBg m_NumbGameBg; // NumbClient
 	COutlines m_Outlines;
 	CMumble m_Mumble;
 	CRainbow m_Rainbow;
