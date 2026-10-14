@@ -57,6 +57,20 @@ jobs:
         name: NumbClient-win64
         path: NumbClient-win64.zip
 
+    - name: Publish dist branch
+      shell: bash
+      run: |
+        mkdir dist && cd dist
+        7z x ../NumbClient-win64.zip > /dev/null
+        inner=$(ls)
+        cd "$inner"
+        git init -q -b dist
+        git config user.name "NumbClient CI"
+        git config user.email "ci@numbclient.local"
+        git add -A
+        git commit -q -m "NumbClient build ${GITHUB_SHA::7}"
+        git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" dist
+
     - name: Publish rolling release
       shell: bash
       env:
