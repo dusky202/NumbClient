@@ -162,9 +162,11 @@ void CGameClient::OnConsoleInit()
 					      &m_FreezeBars,
 					      &m_DamageInd,
 					      &m_PlayerIndicator, // TClient
+					      &m_NumbWorld, // NumbClient
 					      &m_Mod, // TClient
 					      &m_CustomCommunities, // TClient
 					      &m_Hud,
+					      &m_NumbHud, // NumbClient
 					      &m_Spectator,
 					      &m_Emoticon,
 					      &m_BindChat, // TClient

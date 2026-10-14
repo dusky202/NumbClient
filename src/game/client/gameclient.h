@@ -66,6 +66,7 @@
 #include "components/sounds.h"
 #include "components/spectator.h"
 #include "components/statboard.h"
+#include "components/numbclient/numb_hud.h"
 #include "components/tclient/bg_draw.h"
 #include "components/tclient/bindchat.h"
 #include "components/tclient/bindwheel.h"
@@ -234,6 +235,8 @@ public:
 	CTranslate m_Translate;
 	CPet m_Pet;
 	CPlayerIndicator m_PlayerIndicator;
+	CNumbWorld m_NumbWorld; // NumbClient
+	CNumbHud m_NumbHud; // NumbClient
 	COutlines m_Outlines;
 	CMumble m_Mumble;
 	CRainbow m_Rainbow;

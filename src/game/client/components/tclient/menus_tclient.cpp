@@ -38,7 +38,8 @@
 
 enum
 {
-	TCLIENT_TAB_SETTINGS = 0,
+	TCLIENT_TAB_NUMBCLIENT = 0,
+	TCLIENT_TAB_SETTINGS,
 	TCLIENT_TAB_BINDWHEEL,
 	TCLIENT_TAB_WARLIST,
 	TCLIENT_TAB_BINDCHAT,
@@ -336,6 +337,7 @@ void CMenus::RenderSettingsTClient(CUIRect MainView)
 	const float TabWidth = TabBar.w / TabCount;
 	static CButtonContainer s_aPageTabs[NUMBER_OF_TCLIENT_TABS] = {};
 	const char *apTabNames[] = {
+		"NumbClient",
 		TCLocalize("Settings"),
 		TCLocalize("Bind Wheel"),
 		TCLocalize("War List"),
@@ -357,6 +359,8 @@ void CMenus::RenderSettingsTClient(CUIRect MainView)
 
 	MainView.HSplitTop(Margin, nullptr, &MainView);
 
+	if(s_CurCustomTab == TCLIENT_TAB_NUMBCLIENT)
+		RenderSettingsNumbClient(MainView);
 	if(s_CurCustomTab == TCLIENT_TAB_SETTINGS)
 		RenderSettingsTClientSettings(MainView);
 	if(s_CurCustomTab == TCLIENT_TAB_BINDCHAT)
@@ -2281,6 +2285,7 @@ void CMenus::RenderSettingsTClientInfo(CUIRect MainView)
 	RightView.HSplitTop(LineSize * 3.5f, nullptr, &RightView);
 
 	const char *apTabNames[] = {
+		"NumbClient",
 		TCLocalize("Settings"),
 		TCLocalize("Bind Wheel"),
 		TCLocalize("War List"),
@@ -3047,5 +3052,116 @@ void CMenus::RenderSettingsTClientConfigs(CUIRect MainView)
 
 	CUIRect EndPad{Content.x, Content.y, Content.w, 5.0f};
 	s_ScrollRegion.AddRect(EndPad);
+	s_ScrollRegion.End();
+}
+
+void CMenus::RenderSettingsNumbClient(CUIRect MainView)
+{
+	CUIRect Column, LeftView, RightView, Button, Label;
+
+	static CScrollRegion s_ScrollRegion;
+	CScrollRegionParams ScrollParams;
+	ScrollParams.m_ScrollUnit = 60.0f;
+	ScrollParams.m_ScrollbarMargin = 5.0f;
+	s_ScrollRegion.Begin(&MainView, &ScrollParams);
+
+	MainView.VSplitRight(5.0f, &MainView, nullptr);
+	MainView.VSplitLeft(5.0f, nullptr, &MainView);
+	MainView.VSplitMid(&LeftView, &RightView, MarginBetweenViews);
+
+	auto Headline = [&](CUIRect &Col, const char *pText) {
+		Col.HSplitTop(Margin, nullptr, &Col);
+		Col.HSplitTop(HeadlineHeight, &Label, &Col);
+		Ui()->DoLabel(&Label, pText, HeadlineFontSize, TEXTALIGN_ML);
+		Col.HSplitTop(MarginSmall, nullptr, &Col);
+	};
+	auto Slider = [&](CUIRect &Col, int *pValue, const char *pText, int Min, int Max, const char *pSuffix) {
+		Col.HSplitTop(LineSize, &Button, &Col);
+		Ui()->DoScrollbarOption(pValue, pValue, &Button, pText, Min, Max, &CUi::ms_LinearScrollbarScale, 0, pSuffix);
+	};
+
+	// ***** Left: HUD widgets ***** //
+	Column = LeftView;
+	Headline(Column, TCLocalize("HUD Widgets"));
+
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcKeyIndicator, TCLocalize("Key indicator"), &g_Config.m_NcKeyIndicator, &Column, LineSize);
+	if(g_Config.m_NcKeyIndicator)
+	{
+		Slider(Column, &g_Config.m_NcKeyIndicatorX, TCLocalize("Position X"), 0, 1000, "\u2030");
+		Slider(Column, &g_Config.m_NcKeyIndicatorY, TCLocalize("Position Y"), 0, 1000, "\u2030");
+		Slider(Column, &g_Config.m_NcKeyIndicatorSize, TCLocalize("Size"), 50, 300, "%");
+		Column.HSplitTop(MarginSmall, nullptr, &Column);
+	}
+
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcInputVisualizer, TCLocalize("Input visualizer"), &g_Config.m_NcInputVisualizer, &Column, LineSize);
+	if(g_Config.m_NcInputVisualizer)
+	{
+		Slider(Column, &g_Config.m_NcInputVisualizerX, TCLocalize("Position X"), 0, 1000, "\u2030");
+		Slider(Column, &g_Config.m_NcInputVisualizerY, TCLocalize("Position Y"), 0, 1000, "\u2030");
+		Slider(Column, &g_Config.m_NcInputVisualizerSize, TCLocalize("Size"), 50, 300, "%");
+		Column.HSplitTop(MarginSmall, nullptr, &Column);
+	}
+
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcSessionStats, TCLocalize("Session statistics"), &g_Config.m_NcSessionStats, &Column, LineSize);
+	if(g_Config.m_NcSessionStats)
+	{
+		Slider(Column, &g_Config.m_NcSessionStatsX, TCLocalize("Position X"), 0, 1000, "\u2030");
+		Slider(Column, &g_Config.m_NcSessionStatsY, TCLocalize("Position Y"), 0, 1000, "\u2030");
+		Column.HSplitTop(LineSize, &Button, &Column);
+		static CButtonContainer s_ResetSession;
+		if(DoButton_Menu(&s_ResetSession, TCLocalize("Reset session"), 0, &Button))
+			GameClient()->m_NumbHud.ResetSession();
+		Column.HSplitTop(MarginSmall, nullptr, &Column);
+	}
+
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcTeamIndicator, TCLocalize("Team indicator"), &g_Config.m_NcTeamIndicator, &Column, LineSize);
+	if(g_Config.m_NcTeamIndicator)
+	{
+		Slider(Column, &g_Config.m_NcTeamIndicatorX, TCLocalize("Position X"), 0, 1000, "\u2030");
+		Slider(Column, &g_Config.m_NcTeamIndicatorY, TCLocalize("Position Y"), 0, 1000, "\u2030");
+		Column.HSplitTop(MarginSmall, nullptr, &Column);
+	}
+
+	Column.HSplitTop(MarginSmall, nullptr, &Column);
+	static CButtonContainer s_AccentColor;
+	DoLine_ColorPicker(&s_AccentColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Widget accent color"), &g_Config.m_NcHudAccentColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcHudAccentColor, true)), false, nullptr, true);
+	const float LeftBottom = Column.y;
+
+	// ***** Right: world overlays ***** //
+	Column = RightView;
+	Headline(Column, TCLocalize("World Overlays"));
+
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcNinjaTimer, TCLocalize("Ninja timer above tees"), &g_Config.m_NcNinjaTimer, &Column, LineSize);
+
+	Column.HSplitTop(LineSize, &Button, &Column);
+	static CButtonContainer s_HitboxButtons[3];
+	{
+		CUIRect Lbl, Btns;
+		Button.VSplitLeft(120.0f, &Lbl, &Btns);
+		Ui()->DoLabel(&Lbl, TCLocalize("Show hitbox"), FontSize, TEXTALIGN_ML);
+		const char *apNames[] = {TCLocalize("Off"), TCLocalize("Self"), TCLocalize("Everyone")};
+		const float BtnW = Btns.w / 3.0f;
+		for(int i = 0; i < 3; i++)
+		{
+			CUIRect B;
+			Btns.VSplitLeft(BtnW, &B, &Btns);
+			const int Corners = i == 0 ? IGraphics::CORNER_L : i == 2 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE;
+			if(DoButton_MenuTab(&s_HitboxButtons[i], apNames[i], g_Config.m_NcShowHitbox == i, &B, Corners))
+				g_Config.m_NcShowHitbox = i;
+		}
+	}
+	Column.HSplitTop(MarginSmall, nullptr, &Column);
+	if(g_Config.m_NcShowHitbox)
+	{
+		static CButtonContainer s_HitboxColor;
+		DoLine_ColorPicker(&s_HitboxColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Hitbox color"), &g_Config.m_NcHitboxColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcHitboxColor, true)), false, nullptr, true);
+	}
+
+	CUIRect ScrollRegion;
+	ScrollRegion.x = MainView.x;
+	ScrollRegion.y = std::max(LeftBottom, Column.y) + MarginSmall;
+	ScrollRegion.w = MainView.w;
+	ScrollRegion.h = 0.0f;
+	s_ScrollRegion.AddRect(ScrollRegion);
 	s_ScrollRegion.End();
 }

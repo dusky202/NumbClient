@@ -872,3 +872,86 @@ Changing name to %s near finish
 [translate]
 %s to %s failed: %s
 == 
+
+
+JUMP
+== ZIPLA
+
+HOOK
+== KANCA
+
+FIRE
+== ATEŞ
+
+Playtime
+== Oynama süresi
+
+Deaths
+== Ölümler
+
+Finishes
+== Bitirmeler
+
+Kills
+== Öldürmeler
+
+Session
+== Oturum
+
+Frozen: %d/%d
+== Donmuş: %d/%d
+
+LAST ONE STANDING!
+== SON KALAN SENSİN!
+
+HUD Widgets
+== HUD Araçları
+
+Key indicator
+== Tuş göstergesi
+
+Position X
+== Konum X
+
+Position Y
+== Konum Y
+
+Size
+== Boyut
+
+Input visualizer
+== Girdi görselleştirici
+
+Session statistics
+== Oturum istatistikleri
+
+Reset session
+== Oturumu sıfırla
+
+Team indicator
+== Takım göstergesi
+
+Widget accent color
+== Araç vurgu rengi
+
+World Overlays
+== Oyun İçi Katmanlar
+
+Ninja timer above tees
+== Tee'lerin üstünde ninja sayacı
+
+Show hitbox
+== Hitbox göster
+
+Off
+== Kapalı
+
+Self
+== Kendim
+
+Everyone
+== Herkes
+
+Hitbox color
+== Hitbox rengi
+

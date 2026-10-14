@@ -868,6 +868,7 @@ private:
 
 	// TClient: found in menus_tclient.cpp
 	void RenderSettingsTClient(CUIRect MainView);
+	void RenderSettingsNumbClient(CUIRect MainView);
 	void RenderSettingsTClientSettings(CUIRect MainView);
 	void RenderSettingsTClientBindWheel(CUIRect MainView);
 	void RenderSettingsTClientChatBinds(CUIRect MainView);
