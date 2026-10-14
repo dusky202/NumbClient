@@ -2467,6 +2467,27 @@ void CMenus::UpdateColors()
 	}
 }
 
+void CMenus::NcUpdateBgImage()
+{
+	if(str_comp(m_aNcBgLoaded, g_Config.m_NcMenuBgImage) == 0)
+		return;
+	str_copy(m_aNcBgLoaded, g_Config.m_NcMenuBgImage);
+	if(m_NcBgTexture.IsValid())
+		Graphics()->UnloadTexture(&m_NcBgTexture);
+	m_NcBgWidth = m_NcBgHeight = 0;
+	if(m_aNcBgLoaded[0] == '\0')
+		return;
+	CImageInfo Image;
+	if(!Graphics()->LoadPng(Image, m_aNcBgLoaded, IStorage::TYPE_ALL_OR_ABSOLUTE))
+	{
+		log_error("numbclient", "failed to load menu background image '%s'", m_aNcBgLoaded);
+		return;
+	}
+	m_NcBgWidth = Image.m_Width;
+	m_NcBgHeight = Image.m_Height;
+	m_NcBgTexture = Graphics()->LoadTextureRawMove(Image, 0, m_aNcBgLoaded);
+}
+
 ColorRGBA CMenus::NcAccentColor()
 {
 	return color_cast<ColorRGBA>(ColorHSLA(g_Config.m_NcUiAccentColor, true));
@@ -2526,6 +2547,25 @@ void CMenus::RenderBackground()
 			}
 		}
 		Graphics()->QuadsEnd();
+
+		// optional custom background image (cover-scaled)
+		NcUpdateBgImage();
+		if(m_NcBgTexture.IsValid() && m_NcBgWidth > 0 && m_NcBgHeight > 0)
+		{
+			const float ImgAspect = m_NcBgWidth / (float)m_NcBgHeight;
+			float w = ScreenWidth, h = ScreenWidth / ImgAspect;
+			if(h < ScreenHeight)
+			{
+				h = ScreenHeight;
+				w = ScreenHeight * ImgAspect;
+			}
+			Graphics()->TextureSet(m_NcBgTexture);
+			Graphics()->QuadsBegin();
+			Graphics()->SetColor(1.0f, 1.0f, 1.0f, g_Config.m_NcMenuBgImageAlpha / 100.0f);
+			const IGraphics::CQuadItem ImgItem((ScreenWidth - w) / 2.0f, (ScreenHeight - h) / 2.0f, w, h);
+			Graphics()->QuadsDrawTL(&ImgItem, 1);
+			Graphics()->QuadsEnd();
+		}
 
 		// subtle vignette
 		Graphics()->TextureSet(m_TextureBlob);

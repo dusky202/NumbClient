@@ -42,6 +42,8 @@ void CParticles::OnReset()
 
 void CParticles::Add(int Group, CParticle *pPart, float TimePassed)
 {
+	if(g_Config.m_NcNoParticles) // NumbClient optimizer
+		return;
 	if(GameClient()->IsWorldPaused() || GameClient()->IsDemoPlaybackPaused())
 	{
 		return;

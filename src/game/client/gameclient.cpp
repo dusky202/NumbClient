@@ -167,6 +167,7 @@ void CGameClient::OnConsoleInit()
 					      &m_CustomCommunities, // TClient
 					      &m_Hud,
 					      &m_NumbHud, // NumbClient
+					      &m_NumbMisc, // NumbClient
 					      &m_Spectator,
 					      &m_Emoticon,
 					      &m_BindChat, // TClient

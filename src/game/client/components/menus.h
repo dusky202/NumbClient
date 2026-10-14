@@ -46,6 +46,13 @@ class CMenus : public CComponent
 
 
 public:
+	// NumbClient custom menu background image
+	IGraphics::CTextureHandle m_NcBgTexture;
+	char m_aNcBgLoaded[256] = "";
+	int m_NcBgWidth = 0;
+	int m_NcBgHeight = 0;
+	void NcUpdateBgImage();
+
 	// NumbClient theme helpers
 	static ColorRGBA NcAccentColor();
 	static ColorRGBA NcButtonColor();

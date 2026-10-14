@@ -2893,6 +2893,8 @@ if(CLIENT)
     components/tclient/pet.h
     components/numbclient/numb_hud.cpp
     components/numbclient/numb_hud.h
+    components/numbclient/numb_misc.cpp
+    components/numbclient/numb_misc.h
     components/tclient/player_indicator.cpp
     components/tclient/player_indicator.h
     components/tclient/rainbow.cpp

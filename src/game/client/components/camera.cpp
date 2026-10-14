@@ -435,7 +435,7 @@ void CCamera::ConZoomPlus(IConsole::IResult *pResult, void *pUserData)
 	if(!pSelf->ZoomAllowed())
 		return;
 
-	float ZoomAmount = pResult->NumArguments() ? pResult->GetFloat(0) : 1.0f;
+	float ZoomAmount = pResult->NumArguments() ? pResult->GetFloat(0) : (g_Config.m_NcZoomHalfSteps ? 0.5f : 1.0f);
 
 	pSelf->ScaleZoom(CCamera::ZoomStepsToValue(ZoomAmount));
 
@@ -448,7 +448,7 @@ void CCamera::ConZoomMinus(IConsole::IResult *pResult, void *pUserData)
 	if(!pSelf->ZoomAllowed())
 		return;
 
-	float ZoomAmount = pResult->NumArguments() ? pResult->GetFloat(0) : 1.0f;
+	float ZoomAmount = pResult->NumArguments() ? pResult->GetFloat(0) : (g_Config.m_NcZoomHalfSteps ? 0.5f : 1.0f);
 	ZoomAmount *= -1.0f;
 
 	pSelf->ScaleZoom(CCamera::ZoomStepsToValue(ZoomAmount));

@@ -973,3 +973,66 @@ Animated background
 Theme accent color
 == Tema vurgu rengi
 
+Fast Input
+== Hızlı Girdi
+
+Classic
+== Klasik
+
+Balanced
+== Dengeli
+
+Precise
+== Hassas
+
+Aggressive
+== Agresif
+
+Maximum
+== Maksimum
+
+Amount
+== Miktar
+
+Apply to other tees
+== Diğer tee'lere de uygula
+
+Optimizer
+== Optimizasyon
+
+Disable particles
+== Partikülleri kapat
+
+Process priority
+== İşlem önceliği
+
+Normal
+== Normal
+
+Above normal
+== Normalin üstü
+
+High
+== Yüksek
+
+Quality of Life
+== Kolaylıklar
+
+Zoom in half steps
+== Yarım adımlarla zoom
+
+Auto lock team after joining
+== Takıma girince otomatik kilitle
+
+Notify when moved to spectators
+== İzleyiciye atılınca bildir
+
+You were moved to the spectators!
+== İzleyicilere taşındın!
+
+Background image (.png)
+== Arka plan resmi (.png)
+
+Background image opacity
+== Arka plan resmi opaklığı
+

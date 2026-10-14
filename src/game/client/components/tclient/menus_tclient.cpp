@@ -3137,6 +3137,77 @@ void CMenus::RenderSettingsNumbClient(CUIRect MainView)
 	Column.HSplitTop(MarginSmall, nullptr, &Column);
 	static CButtonContainer s_AccentColor;
 	DoLine_ColorPicker(&s_AccentColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Widget accent color"), &g_Config.m_NcHudAccentColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcHudAccentColor, true)), false, nullptr, true);
+
+	// ***** Left: Gameplay & optimizer ***** //
+	Headline(Column, TCLocalize("Fast Input"));
+	{
+		// presets map onto TClient's fast input engine
+		struct SPreset
+		{
+			const char *m_pName;
+			int m_Enabled;
+			int m_Amount;
+			int m_Others;
+		};
+		const SPreset aPresets[] = {
+			{TCLocalize("Off"), 0, 20, 0},
+			{TCLocalize("Classic"), 1, 10, 0},
+			{TCLocalize("Balanced"), 1, 20, 0},
+			{TCLocalize("Precise"), 1, 30, 1},
+			{TCLocalize("Aggressive"), 1, 50, 1},
+			{TCLocalize("Maximum"), 1, 100, 1},
+		};
+		static CButtonContainer s_aPresetButtons[std::size(aPresets)];
+		Column.HSplitTop(LineSize, &Button, &Column);
+		const float BtnW = Button.w / std::size(aPresets);
+		for(size_t i = 0; i < std::size(aPresets); i++)
+		{
+			CUIRect B;
+			Button.VSplitLeft(BtnW, &B, &Button);
+			const SPreset &P = aPresets[i];
+			const bool Selected = g_Config.m_TcFastInput == P.m_Enabled && (!P.m_Enabled || (g_Config.m_TcFastInputAmount == P.m_Amount && g_Config.m_TcFastInputOthers == P.m_Others));
+			const int Corners = i == 0 ? IGraphics::CORNER_L : i == std::size(aPresets) - 1 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE;
+			if(DoButton_MenuTab(&s_aPresetButtons[i], P.m_pName, Selected, &B, Corners))
+			{
+				g_Config.m_TcFastInput = P.m_Enabled;
+				if(P.m_Enabled)
+				{
+					g_Config.m_TcFastInputAmount = P.m_Amount;
+					g_Config.m_TcFastInputOthers = P.m_Others;
+				}
+			}
+		}
+		Column.HSplitTop(MarginSmall, nullptr, &Column);
+		if(g_Config.m_TcFastInput)
+		{
+			Slider(Column, &g_Config.m_TcFastInputAmount, TCLocalize("Amount"), 1, 100, "ms");
+			DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_TcFastInputOthers, TCLocalize("Apply to other tees"), &g_Config.m_TcFastInputOthers, &Column, LineSize);
+		}
+	}
+
+	Headline(Column, TCLocalize("Optimizer"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcNoParticles, TCLocalize("Disable particles"), &g_Config.m_NcNoParticles, &Column, LineSize);
+#if defined(CONF_FAMILY_WINDOWS)
+	Column.HSplitTop(LineSize, &Button, &Column);
+	{
+		CUIRect Lbl, Btns;
+		Button.VSplitLeft(120.0f, &Lbl, &Btns);
+		Ui()->DoLabel(&Lbl, TCLocalize("Process priority"), FontSize, TEXTALIGN_ML);
+		const char *apNames[] = {TCLocalize("Normal"), TCLocalize("Above normal"), TCLocalize("High")};
+		static CButtonContainer s_aPriorityButtons[3];
+		const float BtnW = Btns.w / 3.0f;
+		for(int i = 0; i < 3; i++)
+		{
+			CUIRect B;
+			Btns.VSplitLeft(BtnW, &B, &Btns);
+			const int Corners = i == 0 ? IGraphics::CORNER_L : i == 2 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE;
+			if(DoButton_MenuTab(&s_aPriorityButtons[i], apNames[i], g_Config.m_NcProcessPriority == i, &B, Corners))
+				g_Config.m_NcProcessPriority = i;
+		}
+	}
+	Column.HSplitTop(MarginSmall, nullptr, &Column);
+#endif
+
 	const float LeftBottom = Column.y;
 
 	// ***** Right: world overlays ***** //
@@ -3169,6 +3240,11 @@ void CMenus::RenderSettingsNumbClient(CUIRect MainView)
 		DoLine_ColorPicker(&s_HitboxColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Hitbox color"), &g_Config.m_NcHitboxColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcHitboxColor, true)), false, nullptr, true);
 	}
 
+	Headline(Column, TCLocalize("Quality of Life"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcZoomHalfSteps, TCLocalize("Zoom in half steps"), &g_Config.m_NcZoomHalfSteps, &Column, LineSize);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcAutoTeamLock, TCLocalize("Auto lock team after joining"), &g_Config.m_NcAutoTeamLock, &Column, LineSize);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcSpecMovedNotify, TCLocalize("Notify when moved to spectators"), &g_Config.m_NcSpecMovedNotify, &Column, LineSize);
+
 	Headline(Column, TCLocalize("Menu Theme"));
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcUiTheme, TCLocalize("Dark NumbClient theme"), &g_Config.m_NcUiTheme, &Column, LineSize);
 	if(g_Config.m_NcUiTheme)
@@ -3177,6 +3253,19 @@ void CMenus::RenderSettingsNumbClient(CUIRect MainView)
 		Column.HSplitTop(MarginSmall, nullptr, &Column);
 		static CButtonContainer s_UiAccentColor;
 		DoLine_ColorPicker(&s_UiAccentColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Theme accent color"), &g_Config.m_NcUiAccentColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcUiAccentColor, true)), false, nullptr, true);
+
+		Column.HSplitTop(LineSize, &Button, &Column);
+		{
+			CUIRect Lbl, Box;
+			Button.VSplitLeft(150.0f, &Lbl, &Box);
+			Ui()->DoLabel(&Lbl, TCLocalize("Background image (.png)"), FontSize, TEXTALIGN_ML);
+			static CLineInput s_BgImageInput(g_Config.m_NcMenuBgImage, sizeof(g_Config.m_NcMenuBgImage));
+			s_BgImageInput.SetEmptyText("numbclient/bg.png");
+			Ui()->DoEditBox(&s_BgImageInput, &Box, EditBoxFontSize);
+		}
+		Column.HSplitTop(MarginSmall, nullptr, &Column);
+		if(g_Config.m_NcMenuBgImage[0])
+			Slider(Column, &g_Config.m_NcMenuBgImageAlpha, TCLocalize("Background image opacity"), 0, 100, "%");
 	}
 
 	CUIRect ScrollRegion;
