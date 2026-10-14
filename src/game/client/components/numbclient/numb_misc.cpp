@@ -139,12 +139,17 @@ void CNumbMisc::OnRender()
 {
 	ApplyProcessPriority();
 
-	// NumbClient: fast input only has the fixed "Numb" preset
+	// NumbClient: fast input only has the fixed "Aggressive" preset.
+	// 40 ms = 2 extra prediction ticks for your own tee. Other tees are NOT
+	// over-predicted (that is what causes most of the jitter / rubber-banding),
+	// and hook direction changes are re-predicted mid-tick so pulling feels instant.
 	if(g_Config.m_TcFastInput)
 	{
-		g_Config.m_TcFastInputAmount = 20;
+		g_Config.m_TcFastInputAmount = 40;
 		g_Config.m_TcFastInputOthers = 0;
-		g_Config.m_TcFastInputRepredictHook = 0;
+		g_Config.m_TcFastInputRepredictHook = 1;
+		g_Config.m_ClSubTickAiming = 0; // required for hook re-prediction
+		g_Config.m_ClAntiPingSmooth = 1; // smooth out corrections of other tees
 	}
 
 	if(Client()->State() != IClient::STATE_ONLINE || !GameClient()->m_Snap.m_pLocalInfo)

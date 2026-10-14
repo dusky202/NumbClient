@@ -1132,3 +1132,51 @@ System
 About
 == Hakkında
 
+In-game
+== Oyun içi
+
+Theme
+== Tema
+
+Performance
+== Performans
+
+HUD
+== HUD
+
+Applies your input to your own tee before the next server tick.
+== Girdini bir sonraki sunucu tick'inden önce kendi tee'ne uygular.
+
+Active: 40 ms, your tee only, instant hook re-prediction
+== Aktif: 40 ms, sadece senin tee'n, anında kanca yeniden tahmini
+
+Connection
+== Bağlantı
+
+Turn widgets on here, then place them with the HUD editor.
+== Araçları buradan aç, sonra HUD editörüyle yerleştir.
+
+Widget style
+== Araç stili
+
+Only the game world is stretched, menus stay normal.
+== Sadece oyun dünyası esnetilir, menüler normal kalır.
+
+Aspect ratio
+== En-boy oranı
+
+Shape
+== Şekil
+
+Game background
+== Oyun arka planı
+
+Image (.png)
+== Resim (.png)
+
+Smaller values fit more on the screen.
+== Küçük değerler ekrana daha çok şey sığdırır.
+
+Menu background
+== Menü arka planı
+

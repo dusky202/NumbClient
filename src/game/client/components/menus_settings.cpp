@@ -32,8 +32,8 @@ void CMenus::RenderSettings(CUIRect MainView)
 	const bool NcModern = g_Config.m_NcUiTheme;
 	if(NcModern)
 	{
-		MainView.VSplitLeft(150.0f, &TabBar, &MainView);
-		MainView.VSplitLeft(8.0f, nullptr, &MainView);
+		MainView.HSplitTop(30.0f, &TabBar, &MainView);
+		MainView.HSplitTop(8.0f, nullptr, &MainView);
 		MainView.Draw(NcPanelColor(), IGraphics::CORNER_ALL, 10.0f);
 	}
 	else
@@ -75,53 +75,31 @@ void CMenus::RenderSettings(CUIRect MainView)
 
 	if(NcModern)
 	{
-		// NumbClient: grouped sidebar with icons
+		// NumbClient: one clean horizontal tab strip (the left side is the navigation rail)
 		const ColorRGBA Accent = NcAccentColor();
-		const ColorRGBA ActiveColor = Accent.WithAlpha(0.75f);
+		const ColorRGBA ActiveColor = Accent.WithAlpha(0.8f);
 		const ColorRGBA IdleColor(1.0f, 1.0f, 1.0f, 0.0f);
 		const ColorRGBA HoverColor = Accent.WithAlpha(0.3f);
-		const char *apIcons[SETTINGS_LENGTH] = {
-			FontIcon::EARTH_AMERICAS, FontIcon::GEAR, FontIcon::USER, FontIcon::BRUSH, FontIcon::IMAGE, FontIcon::KEYBOARD,
-			FontIcon::VIDEO, FontIcon::MUSIC, FontIcon::FLAG_CHECKERED, FontIcon::LAYER_GROUP,
-			FontIcon::STAR, FontIcon::ICON_USERS, FontIcon::FOLDER, FontIcon::HEART};
-		struct SGroup
-		{
-			const char *m_pName;
-			int m_First, m_Last;
-		};
-		const SGroup aGroups[] = {
-			{Localize("Game"), SETTINGS_LANGUAGE, SETTINGS_CONTROLS},
-			{TCLocalize("System"), SETTINGS_GRAPHICS, SETTINGS_ASSETS},
-			{"NumbClient", SETTINGS_TCLIENT, SETTINGS_CONFIGS},
-			{TCLocalize("About"), SETTINGS_CREDITS, SETTINGS_CREDITS},
-		};
-
 		TabBar.Draw(NcPanelColor(), IGraphics::CORNER_ALL, 10.0f);
-		TabBar.Margin(6.0f, &TabBar);
-		for(const SGroup &Group : aGroups)
+		TabBar.Margin(3.0f, &TabBar);
+		// label widths decide the tab widths so nothing gets squashed
+		float aWidths[SETTINGS_LENGTH];
+		float Total = 0.0f;
+		const float TabFont = 11.0f;
+		for(int i = 0; i < SETTINGS_LENGTH; i++)
 		{
-			CUIRect GroupLabel;
-			TabBar.HSplitTop(16.0f, &GroupLabel, &TabBar);
-			TextRender()->TextColor(Accent.WithAlpha(0.9f));
-			Ui()->DoLabel(&GroupLabel, Group.m_pName, 9.0f, TEXTALIGN_ML);
-			TextRender()->TextColor(TextRender()->DefaultTextColor());
-			for(int i = Group.m_First; i <= Group.m_Last; i++)
-			{
-				TabBar.HSplitTop(22.0f, &Button, &TabBar);
-				TabBar.HSplitTop(2.0f, nullptr, &TabBar);
-				const bool Active = g_Config.m_UiSettingsPage == i;
-				if(DoButton_MenuTab(&s_aTabButtons[i], "", Active, &Button, IGraphics::CORNER_ALL, nullptr, &IdleColor, &ActiveColor, &HoverColor, 5.0f))
-					g_Config.m_UiSettingsPage = i;
-				CUIRect Icon, Label;
-				Button.VSplitLeft(22.0f, &Icon, &Label);
-				TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-				TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
-				Ui()->DoLabel(&Icon, apIcons[i], 9.0f, TEXTALIGN_MC);
-				TextRender()->SetRenderFlags(0);
-				TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
-				Ui()->DoLabel(&Label, apTabs[i], 10.5f, TEXTALIGN_ML);
-			}
-			TabBar.HSplitTop(6.0f, nullptr, &TabBar);
+			aWidths[i] = TextRender()->TextWidth(TabFont, apTabs[i]) + 16.0f;
+			Total += aWidths[i];
+		}
+		const float Scale = TabBar.w / Total;
+		for(int i = 0; i < SETTINGS_LENGTH; i++)
+		{
+			TabBar.VSplitLeft(aWidths[i] * Scale, &Button, &TabBar);
+			CUIRect Inner;
+			Button.VMargin(1.0f, &Inner);
+			if(DoButton_MenuTab(&s_aTabButtons[i], "", g_Config.m_UiSettingsPage == i, &Inner, IGraphics::CORNER_ALL, nullptr, &IdleColor, &ActiveColor, &HoverColor, 7.0f))
+				g_Config.m_UiSettingsPage = i;
+			Ui()->DoLabel(&Inner, apTabs[i], std::min(TabFont, TabFont * Scale), TEXTALIGN_MC);
 		}
 	}
 	else

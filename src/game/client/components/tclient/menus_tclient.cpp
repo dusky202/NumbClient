@@ -323,30 +323,8 @@ void CMenus::RenderSettingsTClient(CUIRect MainView)
 	if(s_CurCustomTab != TCLIENT_TAB_NUMBCLIENT && s_CurCustomTab != TCLIENT_TAB_SETTINGS)
 		s_CurCustomTab = TCLIENT_TAB_NUMBCLIENT;
 
-	// NumbClient: only two sub pages remain, shown as a compact segmented control
-	CUIRect TabBar, Button;
-	MainView.HSplitTop(LineSize + 4.0f, &TabBar, &MainView);
-	TabBar.VMargin(std::max(0.0f, (TabBar.w - 320.0f) / 2.0f), &TabBar);
-	const ColorRGBA Accent = NcAccentColor();
-	const ColorRGBA ActiveColor = Accent.WithAlpha(0.8f);
-	const ColorRGBA IdleColor(1.0f, 1.0f, 1.0f, 0.06f);
-	const ColorRGBA HoverColor = Accent.WithAlpha(0.35f);
-	static CButtonContainer s_aPageTabs[2] = {};
-	const int aTabs[2] = {TCLIENT_TAB_NUMBCLIENT, TCLIENT_TAB_SETTINGS};
-	const char *apTabNames[2] = {"NumbClient", TCLocalize("TClient features")};
-	for(int i = 0; i < 2; i++)
-	{
-		TabBar.VSplitLeft(TabBar.w / (2 - i), &Button, &TabBar);
-		if(DoButton_MenuTab(&s_aPageTabs[i], apTabNames[i], s_CurCustomTab == aTabs[i], &Button, i == 0 ? IGraphics::CORNER_L : IGraphics::CORNER_R, nullptr, &IdleColor, &ActiveColor, &HoverColor, 8.0f))
-			s_CurCustomTab = aTabs[i];
-	}
-
-	MainView.HSplitTop(Margin, nullptr, &MainView);
-
-	if(s_CurCustomTab == TCLIENT_TAB_NUMBCLIENT)
-		RenderSettingsNumbClient(MainView);
-	else
-		RenderSettingsTClientSettings(MainView);
+	// NumbClient: one page with its own category list (TClient features are the last category)
+	RenderSettingsNumbClient(MainView);
 }
 
 void CMenus::RenderSettingsTClientSettings(CUIRect MainView)
@@ -3019,276 +2997,335 @@ void CMenus::RenderSettingsTClientConfigs(CUIRect MainView)
 
 void CMenus::RenderSettingsNumbClient(CUIRect MainView)
 {
-	CUIRect Column, LeftView, RightView, Button, Label;
+	enum
+	{
+		NC_PAGE_INPUT = 0,
+		NC_PAGE_HUD,
+		NC_PAGE_WORLD,
+		NC_PAGE_VIEW,
+		NC_PAGE_THEME,
+		NC_PAGE_PERFORMANCE,
+		NC_PAGE_QOL,
+		NC_PAGE_TCLIENT,
+		NUM_NC_PAGES
+	};
+	static int s_Page = NC_PAGE_INPUT;
 
+	const ColorRGBA Accent = NcAccentColor();
+	const ColorRGBA ActiveColor = Accent.WithAlpha(0.75f);
+	const ColorRGBA IdleColor(1.0f, 1.0f, 1.0f, 0.0f);
+	const ColorRGBA HoverColor = Accent.WithAlpha(0.3f);
+	const ColorRGBA CardColor(1.0f, 1.0f, 1.0f, 0.045f);
+
+	// ----- category list on the left -----
+	CUIRect Nav, Page, Button, Label;
+	MainView.VSplitLeft(140.0f, &Nav, &Page);
+	Page.VSplitLeft(12.0f, nullptr, &Page);
+	Nav.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.18f), IGraphics::CORNER_ALL, 8.0f);
+	Nav.Margin(5.0f, &Nav);
+
+	struct SNavItem
+	{
+		const char *m_pIcon;
+		const char *m_pName;
+	};
+	const SNavItem aNav[NUM_NC_PAGES] = {
+		{FontIcon::KEYBOARD, TCLocalize("Fast Input")},
+		{FontIcon::LAYER_GROUP, TCLocalize("HUD")},
+		{FontIcon::EYE, TCLocalize("In-game")},
+		{FontIcon::IMAGE, TCLocalize("View")},
+		{FontIcon::BRUSH, TCLocalize("Theme")},
+		{FontIcon::FORWARD_FAST, TCLocalize("Performance")},
+		{FontIcon::STAR, TCLocalize("Quality of Life")},
+		{FontIcon::GEAR, TCLocalize("TClient features")},
+	};
+	static CButtonContainer s_aNavButtons[NUM_NC_PAGES];
+	for(int i = 0; i < NUM_NC_PAGES; i++)
+	{
+		if(i == NC_PAGE_TCLIENT)
+		{
+			Nav.HSplitTop(6.0f, nullptr, &Nav);
+			CUIRect Sep;
+			Nav.HSplitTop(1.0f, &Sep, &Nav);
+			Sep.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.1f), IGraphics::CORNER_NONE, 0.0f);
+			Nav.HSplitTop(6.0f, nullptr, &Nav);
+		}
+		Nav.HSplitTop(24.0f, &Button, &Nav);
+		Nav.HSplitTop(2.0f, nullptr, &Nav);
+		if(DoButton_MenuTab(&s_aNavButtons[i], "", s_Page == i, &Button, IGraphics::CORNER_ALL, nullptr, &IdleColor, &ActiveColor, &HoverColor, 5.0f))
+			s_Page = i;
+		CUIRect Icon;
+		Button.VSplitLeft(24.0f, &Icon, &Label);
+		TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
+		Ui()->DoLabel(&Icon, aNav[i].m_pIcon, 10.0f, TEXTALIGN_MC);
+		TextRender()->SetRenderFlags(0);
+		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+		Ui()->DoLabel(&Label, aNav[i].m_pName, 12.0f, TEXTALIGN_ML);
+	}
+
+	if(s_Page == NC_PAGE_TCLIENT)
+	{
+		RenderSettingsTClientSettings(Page);
+		return;
+	}
+
+	// ----- page content: cards in a scroll region -----
 	static CScrollRegion s_ScrollRegion;
 	CScrollRegionParams ScrollParams;
 	ScrollParams.m_ScrollUnit = 60.0f;
 	ScrollParams.m_ScrollbarMargin = 5.0f;
-	s_ScrollRegion.Begin(&MainView, &ScrollParams);
+	s_ScrollRegion.Begin(&Page, &ScrollParams);
+	Page.VSplitRight(10.0f, &Page, nullptr);
 
-	MainView.VSplitRight(5.0f, &MainView, nullptr);
-	MainView.VSplitLeft(5.0f, nullptr, &MainView);
-	MainView.VSplitMid(&LeftView, &RightView, MarginBetweenViews);
-
-	auto Headline = [&](CUIRect &Col, const char *pText) {
-		Col.HSplitTop(Margin, nullptr, &Col);
-		Col.HSplitTop(HeadlineHeight, &Label, &Col);
-		Ui()->DoLabel(&Label, pText, HeadlineFontSize, TEXTALIGN_ML);
-		Col.HSplitTop(MarginSmall, nullptr, &Col);
+	// cards are drawn behind their content using last frame's measured height
+	static float s_aaCardHeights[NUM_NC_PAGES][8] = {};
+	int CardIndex = 0;
+	CUIRect Column = Page;
+	CUIRect CardStart;
+	auto BeginCard = [&](const char *pTitle, const char *pDescription) {
+		Column.HSplitTop(4.0f, nullptr, &Column);
+		CardStart = Column;
+		const float H = s_aaCardHeights[s_Page][CardIndex];
+		if(H > 0.0f)
+		{
+			CUIRect Card = {Column.x, Column.y, Column.w, H};
+			Card.Draw(CardColor, IGraphics::CORNER_ALL, 8.0f);
+			CUIRect Strip = {Column.x, Column.y + 8.0f, 3.0f, 18.0f};
+			Strip.Draw(Accent.WithAlpha(0.95f), IGraphics::CORNER_ALL, 1.5f);
+		}
+		Column.Margin(12.0f, &Column);
+		Column.h = 100000.0f;
+		Column.HSplitTop(20.0f, &Label, &Column);
+		Ui()->DoLabel(&Label, pTitle, 16.0f, TEXTALIGN_ML);
+		if(pDescription)
+		{
+			Column.HSplitTop(16.0f, &Label, &Column);
+			TextRender()->TextColor(1.0f, 1.0f, 1.0f, 0.55f);
+			Ui()->DoLabel(&Label, pDescription, 11.0f, TEXTALIGN_ML);
+			TextRender()->TextColor(TextRender()->DefaultTextColor());
+		}
+		Column.HSplitTop(8.0f, nullptr, &Column);
 	};
-	auto Slider = [&](CUIRect &Col, int *pValue, const char *pText, int Min, int Max, const char *pSuffix) {
-		Col.HSplitTop(LineSize, &Button, &Col);
+	auto EndCard = [&]() {
+		Column.HSplitTop(4.0f, nullptr, &Column);
+		s_aaCardHeights[s_Page][CardIndex] = Column.y + 12.0f - CardStart.y;
+		Column.x = CardStart.x;
+		Column.w = CardStart.w;
+		Column.y += 12.0f + 8.0f;
+		CardIndex++;
+	};
+	auto Toggle = [&](int *pValue, const char *pText) {
+		DoButton_CheckBoxAutoVMarginAndSet(pValue, pText, pValue, &Column, LineSize);
+	};
+	auto Slider = [&](int *pValue, const char *pText, int Min, int Max, const char *pSuffix) {
+		Column.HSplitTop(LineSize, &Button, &Column);
 		Ui()->DoScrollbarOption(pValue, pValue, &Button, pText, Min, Max, &CUi::ms_LinearScrollbarScale, 0, pSuffix);
+		Column.HSplitTop(3.0f, nullptr, &Column);
 	};
-
-	// ***** Left: HUD widgets ***** //
-	Column = LeftView;
-	Headline(Column, TCLocalize("HUD Widgets"));
-
-	if(Client()->State() == IClient::STATE_ONLINE)
-	{
+	auto Segmented = [&](CButtonContainer *paButtons, int *pValue, const char *pText, const char **ppNames, int Num) {
 		Column.HSplitTop(LineSize, &Button, &Column);
-		static CButtonContainer s_OpenHudEditor;
-		if(DoButton_Menu(&s_OpenHudEditor, TCLocalize("Open HUD editor (drag & drop)"), 0, &Button))
+		CUIRect Lbl, Btns;
+		Button.VSplitLeft(150.0f, &Lbl, &Btns);
+		Ui()->DoLabel(&Lbl, pText, FontSize, TEXTALIGN_ML);
+		const float BtnW = Btns.w / Num;
+		for(int i = 0; i < Num; i++)
 		{
-			SetActive(false);
-			GameClient()->m_NumbHud.SetEditorActive(true);
+			CUIRect B;
+			Btns.VSplitLeft(BtnW, &B, &Btns);
+			const int Corners = i == 0 ? IGraphics::CORNER_L : i == Num - 1 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE;
+			if(DoButton_MenuTab(&paButtons[i], ppNames[i], *pValue == i, &B, Corners, nullptr, nullptr, &ActiveColor, &HoverColor, 5.0f))
+				*pValue = i;
 		}
-		Column.HSplitTop(MarginSmall, nullptr, &Column);
-	}
-
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcKeyIndicator, TCLocalize("Key indicator"), &g_Config.m_NcKeyIndicator, &Column, LineSize);
-	if(g_Config.m_NcKeyIndicator)
-	{
-		Slider(Column, &g_Config.m_NcKeyIndicatorX, TCLocalize("Position X"), 0, 1000, "\u2030");
-		Slider(Column, &g_Config.m_NcKeyIndicatorY, TCLocalize("Position Y"), 0, 1000, "\u2030");
-		Slider(Column, &g_Config.m_NcKeyIndicatorSize, TCLocalize("Size"), 50, 300, "%");
-		Column.HSplitTop(MarginSmall, nullptr, &Column);
-	}
-
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcInputVisualizer, TCLocalize("Input visualizer"), &g_Config.m_NcInputVisualizer, &Column, LineSize);
-	if(g_Config.m_NcInputVisualizer)
-	{
-		Slider(Column, &g_Config.m_NcInputVisualizerX, TCLocalize("Position X"), 0, 1000, "\u2030");
-		Slider(Column, &g_Config.m_NcInputVisualizerY, TCLocalize("Position Y"), 0, 1000, "\u2030");
-		Slider(Column, &g_Config.m_NcInputVisualizerSize, TCLocalize("Size"), 50, 300, "%");
-		Column.HSplitTop(MarginSmall, nullptr, &Column);
-	}
-
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcSessionStats, TCLocalize("Session statistics"), &g_Config.m_NcSessionStats, &Column, LineSize);
-	if(g_Config.m_NcSessionStats)
-	{
-		Slider(Column, &g_Config.m_NcSessionStatsX, TCLocalize("Position X"), 0, 1000, "\u2030");
-		Slider(Column, &g_Config.m_NcSessionStatsY, TCLocalize("Position Y"), 0, 1000, "\u2030");
+		Column.HSplitTop(5.0f, nullptr, &Column);
+	};
+	auto EditBox = [&](CLineInput *pInput, const char *pText, const char *pEmpty) {
 		Column.HSplitTop(LineSize, &Button, &Column);
-		static CButtonContainer s_ResetSession;
-		if(DoButton_Menu(&s_ResetSession, TCLocalize("Reset session"), 0, &Button))
-			GameClient()->m_NumbHud.ResetSession();
-		Column.HSplitTop(MarginSmall, nullptr, &Column);
-	}
-
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcTeamIndicator, TCLocalize("Team indicator"), &g_Config.m_NcTeamIndicator, &Column, LineSize);
-	if(g_Config.m_NcTeamIndicator)
-	{
-		Slider(Column, &g_Config.m_NcTeamIndicatorX, TCLocalize("Position X"), 0, 1000, "\u2030");
-		Slider(Column, &g_Config.m_NcTeamIndicatorY, TCLocalize("Position Y"), 0, 1000, "\u2030");
-		Column.HSplitTop(MarginSmall, nullptr, &Column);
-	}
-
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcMapProgress, TCLocalize("Map progress & estimated finish"), &g_Config.m_NcMapProgress, &Column, LineSize);
-	if(g_Config.m_NcMapProgress)
-	{
-		Slider(Column, &g_Config.m_NcMapProgressX, TCLocalize("Position X"), 0, 1000, "\u2030");
-		Slider(Column, &g_Config.m_NcMapProgressY, TCLocalize("Position Y"), 0, 1000, "\u2030");
-		Column.HSplitTop(MarginSmall, nullptr, &Column);
-	}
-
-	Column.HSplitTop(MarginSmall, nullptr, &Column);
-	static CButtonContainer s_AccentColor;
-	DoLine_ColorPicker(&s_AccentColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Widget accent color"), &g_Config.m_NcHudAccentColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcHudAccentColor, true)), false, nullptr, true);
-
-	// ***** Left: Gameplay & optimizer ***** //
-	Headline(Column, TCLocalize("Fast Input"));
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_TcFastInput, "Numb", &g_Config.m_TcFastInput, &Column, LineSize);
-
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcAntipingLagGuard, TCLocalize("Antiping lag guard"), &g_Config.m_NcAntipingLagGuard, &Column, LineSize);
-	if(g_Config.m_NcAntipingLagGuard)
-		Slider(Column, &g_Config.m_NcAntipingLagGuardSpike, TCLocalize("Spike threshold"), 10, 500, "ms");
-
-	Headline(Column, TCLocalize("Built-in HUD position"));
-	Slider(Column, &g_Config.m_NcHudChatX, TCLocalize("Chat X"), -500, 500, "");
-	Slider(Column, &g_Config.m_NcHudChatY, TCLocalize("Chat Y"), -300, 300, "");
-	Slider(Column, &g_Config.m_NcHudBroadcastX, TCLocalize("Broadcast X"), -500, 500, "");
-	Slider(Column, &g_Config.m_NcHudBroadcastY, TCLocalize("Broadcast Y"), -300, 300, "");
-
-	Headline(Column, TCLocalize("Optimizer"));
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcNoParticles, TCLocalize("Disable particles"), &g_Config.m_NcNoParticles, &Column, LineSize);
-#if defined(CONF_FAMILY_WINDOWS)
-	Column.HSplitTop(LineSize, &Button, &Column);
-	{
-		CUIRect Lbl, Btns;
-		Button.VSplitLeft(120.0f, &Lbl, &Btns);
-		Ui()->DoLabel(&Lbl, TCLocalize("Process priority"), FontSize, TEXTALIGN_ML);
-		const char *apNames[] = {TCLocalize("Normal"), TCLocalize("Above normal"), TCLocalize("High")};
-		static CButtonContainer s_aPriorityButtons[3];
-		const float BtnW = Btns.w / 3.0f;
-		for(int i = 0; i < 3; i++)
-		{
-			CUIRect B;
-			Btns.VSplitLeft(BtnW, &B, &Btns);
-			const int Corners = i == 0 ? IGraphics::CORNER_L : i == 2 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE;
-			if(DoButton_MenuTab(&s_aPriorityButtons[i], apNames[i], g_Config.m_NcProcessPriority == i, &B, Corners))
-				g_Config.m_NcProcessPriority = i;
-		}
-	}
-	Column.HSplitTop(MarginSmall, nullptr, &Column);
-#endif
-
-	const float LeftBottom = Column.y;
-
-	// ***** Right: world overlays ***** //
-	Column = RightView;
-	Headline(Column, TCLocalize("World Overlays"));
-
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcNinjaTimer, TCLocalize("Ninja timer above tees"), &g_Config.m_NcNinjaTimer, &Column, LineSize);
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcHammerIndicator, TCLocalize("Hammer hit zone & push direction"), &g_Config.m_NcHammerIndicator, &Column, LineSize);
-
-	Column.HSplitTop(LineSize, &Button, &Column);
-	static CButtonContainer s_HitboxButtons[3];
-	{
-		CUIRect Lbl, Btns;
-		Button.VSplitLeft(120.0f, &Lbl, &Btns);
-		Ui()->DoLabel(&Lbl, TCLocalize("Show hitbox"), FontSize, TEXTALIGN_ML);
-		const char *apNames[] = {TCLocalize("Off"), TCLocalize("Self"), TCLocalize("Everyone")};
-		const float BtnW = Btns.w / 3.0f;
-		for(int i = 0; i < 3; i++)
-		{
-			CUIRect B;
-			Btns.VSplitLeft(BtnW, &B, &Btns);
-			const int Corners = i == 0 ? IGraphics::CORNER_L : i == 2 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE;
-			if(DoButton_MenuTab(&s_HitboxButtons[i], apNames[i], g_Config.m_NcShowHitbox == i, &B, Corners))
-				g_Config.m_NcShowHitbox = i;
-		}
-	}
-	Column.HSplitTop(MarginSmall, nullptr, &Column);
-	if(g_Config.m_NcShowHitbox)
-	{
-		static CButtonContainer s_HitboxColor;
-		DoLine_ColorPicker(&s_HitboxColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Hitbox color"), &g_Config.m_NcHitboxColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcHitboxColor, true)), false, nullptr, true);
-	}
-
-	Headline(Column, TCLocalize("View"));
-	Column.HSplitTop(LineSize, &Button, &Column);
-	{
-		CUIRect Lbl, Btns;
-		Button.VSplitLeft(120.0f, &Lbl, &Btns);
-		Ui()->DoLabel(&Lbl, TCLocalize("Stretched aspect"), FontSize, TEXTALIGN_ML);
-		const char *apNames[] = {TCLocalize("Off"), "4:3", "5:4", "16:10", "3:2", TCLocalize("Custom")};
-		static CButtonContainer s_aAspectButtons[6];
-		const float BtnW = Btns.w / 6.0f;
-		for(int i = 0; i < 6; i++)
-		{
-			CUIRect B;
-			Btns.VSplitLeft(BtnW, &B, &Btns);
-			const int Corners = i == 0 ? IGraphics::CORNER_L : i == 5 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE;
-			if(DoButton_MenuTab(&s_aAspectButtons[i], apNames[i], g_Config.m_NcAspectPreset == i, &B, Corners))
-				g_Config.m_NcAspectPreset = i;
-		}
-	}
-	Column.HSplitTop(MarginSmall, nullptr, &Column);
-	if(g_Config.m_NcAspectPreset == 5)
-	{
-		Slider(Column, &g_Config.m_NcAspectCustomW, TCLocalize("Aspect width"), 1, 32, "");
-		Slider(Column, &g_Config.m_NcAspectCustomH, TCLocalize("Aspect height"), 1, 32, "");
-	}
-
-	Column.HSplitTop(LineSize, &Button, &Column);
-	{
-		CUIRect Lbl, Btns;
-		Button.VSplitLeft(120.0f, &Lbl, &Btns);
-		Ui()->DoLabel(&Lbl, TCLocalize("Fog"), FontSize, TEXTALIGN_ML);
-		const char *apNames[] = {TCLocalize("Off"), TCLocalize("Circle"), TCLocalize("Rectangle")};
-		static CButtonContainer s_aFogButtons[3];
-		const float BtnW = Btns.w / 3.0f;
-		for(int i = 0; i < 3; i++)
-		{
-			CUIRect B;
-			Btns.VSplitLeft(BtnW, &B, &Btns);
-			const int Corners = i == 0 ? IGraphics::CORNER_L : i == 2 ? IGraphics::CORNER_R : IGraphics::CORNER_NONE;
-			if(DoButton_MenuTab(&s_aFogButtons[i], apNames[i], g_Config.m_NcFog == i, &B, Corners))
-				g_Config.m_NcFog = i;
-		}
-	}
-	Column.HSplitTop(MarginSmall, nullptr, &Column);
-	if(g_Config.m_NcFog)
-	{
-		Slider(Column, &g_Config.m_NcFogRadius, TCLocalize("Fog radius"), 100, 3000, "");
-		Slider(Column, &g_Config.m_NcFogAlpha, TCLocalize("Fog opacity"), 0, 100, "%");
-	}
-
-	Column.HSplitTop(LineSize, &Button, &Column);
-	{
 		CUIRect Lbl, Box;
 		Button.VSplitLeft(150.0f, &Lbl, &Box);
-		Ui()->DoLabel(&Lbl, TCLocalize("Game background (.png)"), FontSize, TEXTALIGN_ML);
-		static CLineInput s_GameBgInput(g_Config.m_NcGameBgImage, sizeof(g_Config.m_NcGameBgImage));
-		s_GameBgInput.SetEmptyText("numbclient/game_bg.png");
-		Ui()->DoEditBox(&s_GameBgInput, &Box, EditBoxFontSize);
-	}
-	Column.HSplitTop(MarginSmall, nullptr, &Column);
-	if(g_Config.m_NcGameBgImage[0])
-		Slider(Column, &g_Config.m_NcGameBgImageAlpha, TCLocalize("Game background opacity"), 0, 100, "%");
+		Ui()->DoLabel(&Lbl, pText, FontSize, TEXTALIGN_ML);
+		pInput->SetEmptyText(pEmpty);
+		Ui()->DoEditBox(pInput, &Box, EditBoxFontSize);
+		Column.HSplitTop(5.0f, nullptr, &Column);
+	};
 
-	Headline(Column, TCLocalize("Quality of Life"));
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcZoomHalfSteps, TCLocalize("Zoom in half steps"), &g_Config.m_NcZoomHalfSteps, &Column, LineSize);
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcAutoTeamLock, TCLocalize("Auto lock team after joining"), &g_Config.m_NcAutoTeamLock, &Column, LineSize);
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcSpecMovedNotify, TCLocalize("Notify when moved to spectators"), &g_Config.m_NcSpecMovedNotify, &Column, LineSize);
-
-	Headline(Column, TCLocalize("Menu Theme"));
+	if(s_Page == NC_PAGE_INPUT)
 	{
-		static int s_PendingScale = -1;
-		if(s_PendingScale < 0)
-			s_PendingScale = g_Config.m_NcUiScale;
-		Column.HSplitTop(LineSize, &Button, &Column);
-		CUIRect Apply;
-		Button.VSplitRight(70.0f, &Button, &Apply);
-		Ui()->DoScrollbarOption(&s_PendingScale, &s_PendingScale, &Button, TCLocalize("Interface scale"), 50, 150, &CUi::ms_LinearScrollbarScale, 0, "%");
-		static CButtonContainer s_ApplyScale;
-		Apply.VSplitLeft(5.0f, nullptr, &Apply);
-		if(DoButton_Menu(&s_ApplyScale, TCLocalize("Apply"), s_PendingScale != g_Config.m_NcUiScale, &Apply))
-			g_Config.m_NcUiScale = s_PendingScale;
-		Column.HSplitTop(MarginSmall, nullptr, &Column);
-	}
-	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcUiTheme, TCLocalize("Dark NumbClient theme"), &g_Config.m_NcUiTheme, &Column, LineSize);
-	if(g_Config.m_NcUiTheme)
-	{
-		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcUiAnimatedBackground, TCLocalize("Animated background"), &g_Config.m_NcUiAnimatedBackground, &Column, LineSize);
-		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcUiSideRail, TCLocalize("Left navigation rail"), &g_Config.m_NcUiSideRail, &Column, LineSize);
-		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcUiTransparentPanels, TCLocalize("Transparent panels"), &g_Config.m_NcUiTransparentPanels, &Column, LineSize);
-		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcUiHighContrast, TCLocalize("High contrast"), &g_Config.m_NcUiHighContrast, &Column, LineSize);
-		Column.HSplitTop(MarginSmall, nullptr, &Column);
-		static CButtonContainer s_UiAccentColor;
-		DoLine_ColorPicker(&s_UiAccentColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Theme accent color"), &g_Config.m_NcUiAccentColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcUiAccentColor, true)), false, nullptr, true);
+		BeginCard(TCLocalize("Fast Input"), TCLocalize("Applies your input to your own tee before the next server tick."));
+		Toggle(&g_Config.m_TcFastInput, TCLocalize("Aggressive"));
+		Column.HSplitTop(LineSize, &Label, &Column);
+		TextRender()->TextColor(g_Config.m_TcFastInput ? Accent.WithAlpha(1.0f) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.5f));
+		Ui()->DoLabel(&Label, g_Config.m_TcFastInput ? TCLocalize("Active: 40 ms, your tee only, instant hook re-prediction") : TCLocalize("Off"), 12.0f, TEXTALIGN_ML);
+		TextRender()->TextColor(TextRender()->DefaultTextColor());
+		EndCard();
 
-		Column.HSplitTop(LineSize, &Button, &Column);
+		BeginCard(TCLocalize("Connection"), nullptr);
+		if(!g_Config.m_TcFastInput)
+			Toggle(&g_Config.m_ClSubTickAiming, TCLocalize("Sub-Tick aiming"));
+		Toggle(&g_Config.m_NcAntipingLagGuard, TCLocalize("Antiping lag guard"));
+		if(g_Config.m_NcAntipingLagGuard)
+			Slider(&g_Config.m_NcAntipingLagGuardSpike, TCLocalize("Spike threshold"), 10, 500, "ms");
+		EndCard();
+	}
+	else if(s_Page == NC_PAGE_HUD)
+	{
+		BeginCard(TCLocalize("HUD Widgets"), TCLocalize("Turn widgets on here, then place them with the HUD editor."));
+		if(Client()->State() == IClient::STATE_ONLINE)
 		{
-			CUIRect Lbl, Box;
-			Button.VSplitLeft(150.0f, &Lbl, &Box);
-			Ui()->DoLabel(&Lbl, TCLocalize("Background image (.png)"), FontSize, TEXTALIGN_ML);
-			static CLineInput s_BgImageInput(g_Config.m_NcMenuBgImage, sizeof(g_Config.m_NcMenuBgImage));
-			s_BgImageInput.SetEmptyText("numbclient/bg.png");
-			Ui()->DoEditBox(&s_BgImageInput, &Box, EditBoxFontSize);
+			Column.HSplitTop(LineSize + 4.0f, &Button, &Column);
+			Button.VSplitLeft(260.0f, &Button, nullptr);
+			static CButtonContainer s_OpenHudEditor;
+			if(DoButton_Menu(&s_OpenHudEditor, TCLocalize("Open HUD editor (drag & drop)"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, Accent.WithAlpha(0.6f)))
+			{
+				SetActive(false);
+				GameClient()->m_NumbHud.SetEditorActive(true);
+			}
+			Column.HSplitTop(8.0f, nullptr, &Column);
 		}
-		Column.HSplitTop(MarginSmall, nullptr, &Column);
-		if(g_Config.m_NcMenuBgImage[0])
-			Slider(Column, &g_Config.m_NcMenuBgImageAlpha, TCLocalize("Background image opacity"), 0, 100, "%");
+		Toggle(&g_Config.m_NcKeyIndicator, TCLocalize("Key indicator"));
+		if(g_Config.m_NcKeyIndicator)
+			Slider(&g_Config.m_NcKeyIndicatorSize, TCLocalize("Size"), 50, 300, "%");
+		Toggle(&g_Config.m_NcInputVisualizer, TCLocalize("Input visualizer"));
+		if(g_Config.m_NcInputVisualizer)
+			Slider(&g_Config.m_NcInputVisualizerSize, TCLocalize("Size"), 50, 300, "%");
+		Toggle(&g_Config.m_NcSessionStats, TCLocalize("Session statistics"));
+		if(g_Config.m_NcSessionStats)
+		{
+			Column.HSplitTop(LineSize, &Button, &Column);
+			Button.VSplitLeft(160.0f, &Button, nullptr);
+			static CButtonContainer s_ResetSession;
+			if(DoButton_Menu(&s_ResetSession, TCLocalize("Reset session"), 0, &Button))
+				GameClient()->m_NumbHud.ResetSession();
+			Column.HSplitTop(5.0f, nullptr, &Column);
+		}
+		Toggle(&g_Config.m_NcTeamIndicator, TCLocalize("Team indicator"));
+		Toggle(&g_Config.m_NcMapProgress, TCLocalize("Map progress & estimated finish"));
+		EndCard();
+
+		BeginCard(TCLocalize("Widget style"), nullptr);
+		static CButtonContainer s_AccentColor;
+		DoLine_ColorPicker(&s_AccentColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Widget accent color"), &g_Config.m_NcHudAccentColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcHudAccentColor, true)), false, nullptr, true);
+		EndCard();
+
+		BeginCard(TCLocalize("Built-in HUD position"), nullptr);
+		Slider(&g_Config.m_NcHudChatX, TCLocalize("Chat X"), -500, 500, "");
+		Slider(&g_Config.m_NcHudChatY, TCLocalize("Chat Y"), -300, 300, "");
+		Slider(&g_Config.m_NcHudBroadcastX, TCLocalize("Broadcast X"), -500, 500, "");
+		Slider(&g_Config.m_NcHudBroadcastY, TCLocalize("Broadcast Y"), -300, 300, "");
+		EndCard();
+	}
+	else if(s_Page == NC_PAGE_WORLD)
+	{
+		BeginCard(TCLocalize("World Overlays"), nullptr);
+		Toggle(&g_Config.m_NcNinjaTimer, TCLocalize("Ninja timer above tees"));
+		Toggle(&g_Config.m_NcHammerIndicator, TCLocalize("Hammer hit zone & push direction"));
+		static CButtonContainer s_aHitboxButtons[3];
+		const char *apHitbox[] = {TCLocalize("Off"), TCLocalize("Self"), TCLocalize("Everyone")};
+		Segmented(s_aHitboxButtons, &g_Config.m_NcShowHitbox, TCLocalize("Show hitbox"), apHitbox, 3);
+		if(g_Config.m_NcShowHitbox)
+		{
+			static CButtonContainer s_HitboxColor;
+			DoLine_ColorPicker(&s_HitboxColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Hitbox color"), &g_Config.m_NcHitboxColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcHitboxColor, true)), false, nullptr, true);
+		}
+		EndCard();
+	}
+	else if(s_Page == NC_PAGE_VIEW)
+	{
+		BeginCard(TCLocalize("Stretched aspect"), TCLocalize("Only the game world is stretched, menus stay normal."));
+		static CButtonContainer s_aAspectButtons[6];
+		const char *apAspect[] = {TCLocalize("Off"), "4:3", "5:4", "16:10", "3:2", TCLocalize("Custom")};
+		Segmented(s_aAspectButtons, &g_Config.m_NcAspectPreset, TCLocalize("Aspect ratio"), apAspect, 6);
+		if(g_Config.m_NcAspectPreset == 5)
+		{
+			Slider(&g_Config.m_NcAspectCustomW, TCLocalize("Aspect width"), 1, 32, "");
+			Slider(&g_Config.m_NcAspectCustomH, TCLocalize("Aspect height"), 1, 32, "");
+		}
+		EndCard();
+
+		BeginCard(TCLocalize("Fog"), nullptr);
+		static CButtonContainer s_aFogButtons[3];
+		const char *apFog[] = {TCLocalize("Off"), TCLocalize("Circle"), TCLocalize("Rectangle")};
+		Segmented(s_aFogButtons, &g_Config.m_NcFog, TCLocalize("Shape"), apFog, 3);
+		if(g_Config.m_NcFog)
+		{
+			Slider(&g_Config.m_NcFogRadius, TCLocalize("Fog radius"), 100, 3000, "");
+			Slider(&g_Config.m_NcFogAlpha, TCLocalize("Fog opacity"), 0, 100, "%");
+		}
+		EndCard();
+
+		BeginCard(TCLocalize("Game background"), nullptr);
+		static CLineInput s_GameBgInput(g_Config.m_NcGameBgImage, sizeof(g_Config.m_NcGameBgImage));
+		EditBox(&s_GameBgInput, TCLocalize("Image (.png)"), "numbclient/game_bg.png");
+		if(g_Config.m_NcGameBgImage[0])
+			Slider(&g_Config.m_NcGameBgImageAlpha, TCLocalize("Game background opacity"), 0, 100, "%");
+		EndCard();
+	}
+	else if(s_Page == NC_PAGE_THEME)
+	{
+		BeginCard(TCLocalize("Menu Theme"), nullptr);
+		Toggle(&g_Config.m_NcUiTheme, TCLocalize("Dark NumbClient theme"));
+		if(g_Config.m_NcUiTheme)
+		{
+			Toggle(&g_Config.m_NcUiSideRail, TCLocalize("Left navigation rail"));
+			Toggle(&g_Config.m_NcUiAnimatedBackground, TCLocalize("Animated background"));
+			Toggle(&g_Config.m_NcUiTransparentPanels, TCLocalize("Transparent panels"));
+			Toggle(&g_Config.m_NcUiHighContrast, TCLocalize("High contrast"));
+			Column.HSplitTop(4.0f, nullptr, &Column);
+			static CButtonContainer s_UiAccentColor;
+			DoLine_ColorPicker(&s_UiAccentColor, ColorPickerLineSize, ColorPickerLabelSize, ColorPickerLineSpacing, &Column, TCLocalize("Theme accent color"), &g_Config.m_NcUiAccentColor, color_cast<ColorRGBA>(ColorHSLA(DefaultConfig::NcUiAccentColor, true)), false, nullptr, true);
+		}
+		EndCard();
+
+		BeginCard(TCLocalize("Interface scale"), TCLocalize("Smaller values fit more on the screen."));
+		{
+			static int s_PendingScale = -1;
+			if(s_PendingScale < 0)
+				s_PendingScale = g_Config.m_NcUiScale;
+			Column.HSplitTop(LineSize, &Button, &Column);
+			CUIRect Apply;
+			Button.VSplitRight(80.0f, &Button, &Apply);
+			Ui()->DoScrollbarOption(&s_PendingScale, &s_PendingScale, &Button, TCLocalize("Interface scale"), 50, 150, &CUi::ms_LinearScrollbarScale, 0, "%");
+			static CButtonContainer s_ApplyScale;
+			Apply.VSplitLeft(8.0f, nullptr, &Apply);
+			if(DoButton_Menu(&s_ApplyScale, TCLocalize("Apply"), s_PendingScale != g_Config.m_NcUiScale, &Apply))
+				g_Config.m_NcUiScale = s_PendingScale;
+		}
+		EndCard();
+
+		if(g_Config.m_NcUiTheme)
+		{
+			BeginCard(TCLocalize("Menu background"), nullptr);
+			static CLineInput s_BgImageInput(g_Config.m_NcMenuBgImage, sizeof(g_Config.m_NcMenuBgImage));
+			EditBox(&s_BgImageInput, TCLocalize("Image (.png)"), "numbclient/bg.png");
+			if(g_Config.m_NcMenuBgImage[0])
+				Slider(&g_Config.m_NcMenuBgImageAlpha, TCLocalize("Background image opacity"), 0, 100, "%");
+			EndCard();
+		}
+	}
+	else if(s_Page == NC_PAGE_PERFORMANCE)
+	{
+		BeginCard(TCLocalize("Optimizer"), nullptr);
+		Toggle(&g_Config.m_NcNoParticles, TCLocalize("Disable particles"));
+#if defined(CONF_FAMILY_WINDOWS)
+		static CButtonContainer s_aPriorityButtons[3];
+		const char *apPriority[] = {TCLocalize("Normal"), TCLocalize("Above normal"), TCLocalize("High")};
+		Segmented(s_aPriorityButtons, &g_Config.m_NcProcessPriority, TCLocalize("Process priority"), apPriority, 3);
+#endif
+		EndCard();
+	}
+	else if(s_Page == NC_PAGE_QOL)
+	{
+		BeginCard(TCLocalize("Quality of Life"), nullptr);
+		Toggle(&g_Config.m_NcZoomHalfSteps, TCLocalize("Zoom in half steps"));
+		Toggle(&g_Config.m_NcAutoTeamLock, TCLocalize("Auto lock team after joining"));
+		Toggle(&g_Config.m_NcSpecMovedNotify, TCLocalize("Notify when moved to spectators"));
+		EndCard();
 	}
 
 	CUIRect ScrollRegion;
-	ScrollRegion.x = MainView.x;
-	ScrollRegion.y = std::max(LeftBottom, Column.y) + MarginSmall;
-	ScrollRegion.w = MainView.w;
+	ScrollRegion.x = Page.x;
+	ScrollRegion.y = Column.y;
+	ScrollRegion.w = Page.w;
 	ScrollRegion.h = 0.0f;
 	s_ScrollRegion.AddRect(ScrollRegion);
 	s_ScrollRegion.End();
