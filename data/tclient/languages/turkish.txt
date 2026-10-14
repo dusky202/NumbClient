@@ -955,3 +955,9 @@ Everyone
 Hitbox color
 == Hitbox rengi
 
+Open HUD editor (drag & drop)
+== HUD editörünü aç (sürükle bırak)
+
+HUD editor: drag widgets with the mouse, ESC to close
+== HUD editörü: araçları fareyle sürükle, kapatmak için ESC
+

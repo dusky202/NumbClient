@@ -3084,6 +3084,18 @@ void CMenus::RenderSettingsNumbClient(CUIRect MainView)
 	Column = LeftView;
 	Headline(Column, TCLocalize("HUD Widgets"));
 
+	if(Client()->State() == IClient::STATE_ONLINE)
+	{
+		Column.HSplitTop(LineSize, &Button, &Column);
+		static CButtonContainer s_OpenHudEditor;
+		if(DoButton_Menu(&s_OpenHudEditor, TCLocalize("Open HUD editor (drag & drop)"), 0, &Button))
+		{
+			SetActive(false);
+			GameClient()->m_NumbHud.SetEditorActive(true);
+		}
+		Column.HSplitTop(MarginSmall, nullptr, &Column);
+	}
+
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_NcKeyIndicator, TCLocalize("Key indicator"), &g_Config.m_NcKeyIndicator, &Column, LineSize);
 	if(g_Config.m_NcKeyIndicator)
 	{

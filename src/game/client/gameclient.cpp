@@ -198,6 +198,7 @@ void CGameClient::OnConsoleInit()
 						  &m_Motd, // for pressing esc to remove it
 						  &m_Spectator,
 						  &m_BindWheel, // TClient
+						  &m_NumbHud, // NumbClient
 						  &m_Emoticon,
 						  &m_ImportantAlert,
 						  &m_Menus,
